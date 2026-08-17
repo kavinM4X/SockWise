@@ -1,0 +1,96 @@
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
+import connectDB from "./config/db.js";
+import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
+import authRoutes from "./routes/authRoutes.js";
+import productRoutes from "./routes/productRoutes.js";
+import saleRoutes from "./routes/saleRoutes.js";
+import expenseRoutes from "./routes/expenseRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import customerRoutes from "./routes/customerRoutes.js";
+import backupRoutes from "./routes/backupRoutes.js";
+import swaggerUi from "swagger-ui-express";
+import fs from 'fs';
+
+const swaggerDocument = JSON.parse(fs.readFileSync(new URL('./swagger.json', import.meta.url)));
+
+dotenv.config();
+
+// Environment Validation
+const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET', 'PORT'];
+const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+if (missingVars.length > 0) {
+  console.error(`FATAL ERROR: Missing environment variables: ${missingVars.join(', ')}`);
+  process.exit(1);
+}
+
+connectDB();
+
+const app = express();
+
+// Security Middleware
+app.use(helmet());
+
+// Production CORS Configuration
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.FRONTEND_URL || 'https://sockwise.vercel.app']
+    : '*',
+  credentials: true,
+}));
+
+// Request Logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
+// Global Rate Limiter
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // limit each IP to 1000 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.'
+});
+app.use('/api', globalLimiter);
+
+// Auth Route-Specific Rate Limiter
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50, // limit each IP to 50 login/register requests per windowMs
+  message: 'Too many authentication attempts, please try again later.'
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Health Endpoint
+app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok' }));
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+app.get("/", (req, res) => {
+  res.send("SockWise Backend is Running 🚀");
+});
+
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/sales", saleRoutes);
+app.use("/api/expenses", expenseRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/backup", backupRoutes);
+
+app.use(notFound);
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
