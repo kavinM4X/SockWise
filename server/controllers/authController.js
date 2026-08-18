@@ -117,19 +117,42 @@ export const updateProfile = async (req, res, next) => {
     const user = await User.findById(req.user._id);
 
     if (user) {
-      user.name = req.body.name || user.name;
-      user.email = req.body.email || user.email;
-      user.phone = req.body.phone || user.phone;
-      user.shopName = req.body.shopName || user.shopName;
-      user.ownerName = req.body.ownerName || user.ownerName;
-      user.address = req.body.address || user.address;
-      user.gstNumber = req.body.gstNumber || user.gstNumber;
-      user.currency = req.body.currency || user.currency;
-      user.theme = req.body.theme || user.theme;
-      user.dateFormat = req.body.dateFormat || user.dateFormat;
-      if (req.body.logo !== undefined) {
-        user.logo = req.body.logo;
+      if (req.body.name && req.body.name.trim() !== '') {
+        user.name = req.body.name.trim();
       }
+      
+      if (req.body.email !== undefined) {
+        const trimmedEmail = req.body.email ? req.body.email.trim() : '';
+        if (trimmedEmail !== '') {
+          const existingEmailUser = await User.findOne({ email: trimmedEmail, _id: { $ne: user._id } });
+          if (existingEmailUser) {
+            res.status(400);
+            throw new Error('Email is already in use by another account');
+          }
+          user.email = trimmedEmail;
+        } else {
+          user.email = undefined;
+        }
+      }
+
+      if (req.body.phone && req.body.phone.trim() !== '') {
+        const trimmedPhone = req.body.phone.trim();
+        const existingPhoneUser = await User.findOne({ phone: trimmedPhone, _id: { $ne: user._id } });
+        if (existingPhoneUser) {
+          res.status(400);
+          throw new Error('Phone number is already registered to another account');
+        }
+        user.phone = trimmedPhone;
+      }
+
+      if (req.body.shopName !== undefined) user.shopName = req.body.shopName;
+      if (req.body.ownerName !== undefined) user.ownerName = req.body.ownerName;
+      if (req.body.address !== undefined) user.address = req.body.address;
+      if (req.body.gstNumber !== undefined) user.gstNumber = req.body.gstNumber;
+      if (req.body.currency !== undefined) user.currency = req.body.currency;
+      if (req.body.theme !== undefined) user.theme = req.body.theme;
+      if (req.body.dateFormat !== undefined) user.dateFormat = req.body.dateFormat;
+      if (req.body.logo !== undefined) user.logo = req.body.logo;
 
       const updatedUser = await user.save();
 

@@ -64,7 +64,12 @@ const Profile = () => {
 
   const submitProfile = async (e) => {
     e.preventDefault();
-    const success = await updateProfile(profileData);
+    const payload = {
+      ...profileData,
+      name: profileData.name || currentUser?.name || profileData.ownerName || profileData.shopName || 'User',
+      email: profileData.email ? profileData.email.trim() : ''
+    };
+    const success = await updateProfile(payload);
     if (success) {
       toast.success('Shop Profile updated successfully!');
     }

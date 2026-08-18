@@ -17,10 +17,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        'Please add a valid email',
-      ],
+      validate: {
+        validator: function(v) {
+          if (!v || v.trim() === '') return true;
+          return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
+        },
+        message: 'Please add a valid email'
+      }
     },
     password: {
       type: String,
