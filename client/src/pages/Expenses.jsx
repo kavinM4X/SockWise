@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { fmt } from '../utils/helpers';
 import toast from 'react-hot-toast';
@@ -37,6 +37,14 @@ const Expenses = () => {
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('All');
   const [filterMethod, setFilterMethod] = useState('All');
+
+  useEffect(() => {
+    const handleFabOpen = () => {
+      openCreateModal();
+    };
+    window.addEventListener('open-expense-modal', handleFabOpen);
+    return () => window.removeEventListener('open-expense-modal', handleFabOpen);
+  }, []);
 
   // Filtered Expenses
   const filteredExpenses = expenses.filter(e => {
@@ -110,6 +118,33 @@ const Expenses = () => {
     }
   };
 
+  // Dynamic Real-Time Expense Analytics
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekStart = new Date(todayStart);
+  weekStart.setDate(todayStart.getDate() - todayStart.getDay());
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const todayExpenses = expenses.filter(e => new Date(e.expenseDate || e.createdAt) >= todayStart)
+                                .reduce((sum, e) => sum + (e.amount || 0), 0);
+  const weeklyExpenses = expenses.filter(e => new Date(e.expenseDate || e.createdAt) >= weekStart)
+                                 .reduce((sum, e) => sum + (e.amount || 0), 0);
+  const monthlyExpenses = expenses.filter(e => new Date(e.expenseDate || e.createdAt) >= monthStart)
+                                  .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+  const catTotals = {};
+  expenses.forEach(e => {
+    catTotals[e.category] = (catTotals[e.category] || 0) + (e.amount || 0);
+  });
+  let topCategory = 'N/A';
+  let maxCatAmount = 0;
+  Object.keys(catTotals).forEach(cat => {
+    if (catTotals[cat] > maxCatAmount) {
+      maxCatAmount = catTotals[cat];
+      topCategory = cat;
+    }
+  });
+
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this expense record?')) {
       await deleteExpenseData(id);
@@ -122,21 +157,21 @@ const Expenses = () => {
       {/* ===== 1. EXPENSE ANALYTICS HERO CARD ===== */}
       <div className="exp-hero-card animate-stagger stagger-1">
         <div className="eh-label">Today's Operating Expenses</div>
-        <div className="eh-value">{fmt(expenseStats?.todayExpenses || 0)}</div>
+        <div className="eh-value">{fmt(todayExpenses)}</div>
 
         <div className="exp-hero-grid">
           <div className="eh-item">
             <div className="eh-item-title">Weekly</div>
-            <div className="eh-item-val">{fmt(expenseStats?.weeklyExpenses || 0)}</div>
+            <div className="eh-item-val">{fmt(weeklyExpenses)}</div>
           </div>
           <div className="eh-item">
             <div className="eh-item-title">Monthly</div>
-            <div className="eh-item-val">{fmt(expenseStats?.monthlyExpenses || 0)}</div>
+            <div className="eh-item-val">{fmt(monthlyExpenses)}</div>
           </div>
           <div className="eh-item">
             <div className="eh-item-title">Top Cost</div>
             <div className="eh-item-val" style={{ fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {expenseStats?.highestCategory || 'N/A'}
+              {topCategory}
             </div>
           </div>
         </div>

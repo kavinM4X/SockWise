@@ -307,12 +307,12 @@ const Report = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div className={`rank-pill top-${idx + 1}`}>{idx + 1}</div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--ink)' }}>{p.productName || p.name}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--ink-soft)' }}>{p.totalQuantity || p.quantity || 0} units sold</div>
+                  <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--ink)' }}>{p._id || p.productName || p.name}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--ink-soft)' }}>{p.qtySold || p.quantity || 0} units sold</div>
                 </div>
               </div>
               <div className="num" style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '14px' }}>
-                {fmt(p.totalRevenue || p.revenue || 0)}
+                {fmt(p.revenue || p.totalRevenue || 0)}
               </div>
             </div>
           ))
@@ -336,12 +336,12 @@ const Report = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div className={`rank-pill top-${idx + 1}`}>{idx + 1}</div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--ink)' }}>{c.customerName || c.name || 'Walk-in Client'}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--ink-soft)' }}>{c.totalOrders || c.orders || 1} order(s)</div>
+                  <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--ink)' }}>{c._id || c.customerName || 'Walk-in Client'}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--ink-soft)' }}>{c.orders || c.totalOrders || 1} order(s)</div>
                 </div>
               </div>
               <div className="num" style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '14px' }}>
-                {fmt(c.totalRevenue || c.total || 0)}
+                {fmt(c.totalSpent || c.totalRevenue || 0)}
               </div>
             </div>
           ))

@@ -26,15 +26,13 @@ const AppShell = () => {
   const initial = currentUser?.name ? currentUser.name.trim().charAt(0).toUpperCase() : 'S';
 
   const handleFabClick = () => {
-    // Scroll to the top input logic based on page
-    let elementId = null;
-    if (currentPath === '/stock') elementId = 's-id';
-    if (currentPath === '/sale') elementId = 'sale-name';
-    if (currentPath === '/expenses') elementId = 'exp-amount';
-
-    if (elementId) {
-      const el = document.getElementById(elementId);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (currentPath === '/expenses') {
+      window.dispatchEvent(new CustomEvent('open-expense-modal'));
+    } else if (currentPath === '/stock') {
+      window.dispatchEvent(new CustomEvent('open-stock-modal'));
+    } else {
+      const el = document.getElementById('sale-name');
+      if (el) el.focus();
     }
   };
 

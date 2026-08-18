@@ -47,6 +47,14 @@ const Stock = () => {
     setSellingPrice(p + (p * (pr / 100)));
   }, [purchase, profit]);
 
+  useEffect(() => {
+    const handleFabOpen = () => {
+      openCreateModal();
+    };
+    window.addEventListener('open-stock-modal', handleFabOpen);
+    return () => window.removeEventListener('open-stock-modal', handleFabOpen);
+  }, [products]);
+
   const openCreateModal = () => {
     setEditId(null);
     setId('SK-' + String(products.length + 1).padStart(3, '0'));
