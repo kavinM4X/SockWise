@@ -264,7 +264,6 @@ const Customers = () => {
                     placeholder="Enter amount" 
                     value={amount} 
                     onChange={e => setAmount(e.target.value)}
-                    min={0.01}
                     autoFocus
                     required
                   />

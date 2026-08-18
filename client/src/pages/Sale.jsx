@@ -296,7 +296,6 @@ const Sale = () => {
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <input 
                   type="number" 
-                  min="1"
                   placeholder="1" 
                   value={quantity} 
                   onChange={e => setQuantity(e.target.value)} 
