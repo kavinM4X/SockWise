@@ -223,25 +223,31 @@ const Sale = () => {
   return (
     <div className="page" id="page-sale">
 
-      {/* ===== 1. POS SUMMARY HEADER ===== */}
-      <div className="pos-header-card">
-        <div className="pos-label">Today's Sales Revenue</div>
-        <div className="pos-value">{fmt(todayRevenue)}</div>
+      {/* ===== 1. POS TERMINAL HERO HEADER ===== */}
+      <div className="pos-hero-card animate-stagger stagger-1">
+        <div className="ph-label">Checkout Terminal</div>
+        <div className="ph-value">{items.length} items in cart</div>
 
-        <div className="pos-grid-stats">
-          <div>
-            <div className="pg-item-title">Invoices Today</div>
-            <div className="pg-item-val">{todayInvoiceCount} bills</div>
+        <div className="pos-hero-grid">
+          <div className="ph-item">
+            <div className="ph-item-title">Subtotal</div>
+            <div className="ph-item-val">{fmt(subtotal)}</div>
           </div>
-          <div>
-            <div className="pg-item-title">Avg Bill Value</div>
-            <div className="pg-item-val">{fmt(avgBillValue)}</div>
+          <div className="ph-item">
+            <div className="ph-item-title">Fitting Charge</div>
+            <div className="ph-item-val">{fmt(parsedFitting)}</div>
+          </div>
+          <div className="ph-item">
+            <div className="ph-item-title">Total Payable</div>
+            <div className="ph-item-val" style={{ color: '#4ADE80' }}>
+              {fmt(total)}
+            </div>
           </div>
         </div>
       </div>
 
       {/* ===== 2. TERMINAL NAVIGATION TABS ===== */}
-      <div className="pos-tab-bar">
+      <div className="pos-tab-bar animate-stagger stagger-2">
         <button 
           className={`pos-tab-btn ${activeTab === 'newBilling' ? 'active' : ''}`}
           onClick={() => setActiveTab('newBilling')}
@@ -260,7 +266,7 @@ const Sale = () => {
 
       {/* ===== 3. NEW BILLING TERMINAL ===== */}
       {activeTab === 'newBilling' && (
-        <div className="card-form field-dark">
+        <div className="card-form field-dark animate-stagger stagger-3">
           <h4 className="subhead" style={{ marginBottom: '14px' }}>Customer Information</h4>
           
           <div className="row-2">
@@ -614,7 +620,7 @@ const Sale = () => {
           <div className="modal-container" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '18px', fontFamily: 'Fraunces, serif' }}>Select Product for Cart</h3>
+                <h3 style={{ margin: 0, fontSize: '18px', fontFamily: 'var(--font-heading)' }}>Select Product for Cart</h3>
                 <div style={{ fontSize: '11.5px', color: 'var(--ink-soft)' }}>Tap product card to select or add to cart</div>
               </div>
               <FiX size={20} style={{ cursor: 'pointer', color: 'var(--ink-soft)' }} onClick={() => setShowProductPickerModal(false)} />

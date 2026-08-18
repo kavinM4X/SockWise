@@ -96,7 +96,7 @@ const Customers = () => {
     <div className="page" id="page-customers">
       
       {/* ===== 1. CREDIT & CUSTOMER HERO CARD ===== */}
-      <div className="cust-hero-card">
+      <div className="cust-hero-card animate-stagger stagger-1">
         <div className="ch-label">Total Outstanding Credit Tab</div>
         <div className="ch-value">{fmt(totalPendingTab)}</div>
 
@@ -112,64 +112,66 @@ const Customers = () => {
         </div>
       </div>
 
-      {/* ===== 2. ACTION HEADER ===== */}
-      <div className="stock-action-header">
-        <div className="section-title" style={{ margin: 0 }}>
-          <span>Customer Ledger</span>
-          <span className="count">({filteredCustomers.length})</span>
+      {/* ===== 2. ACTION HEADER & FILTERS ===== */}
+      <div className="animate-stagger stagger-2">
+        <div className="stock-action-header">
+          <div className="section-title" style={{ margin: 0 }}>
+            <span>Customer Ledger</span>
+            <span className="count">({filteredCustomers.length})</span>
+          </div>
+        </div>
+
+        {/* SEARCH & FILTER CHIPS */}
+        <div style={{ position: 'relative', marginBottom: '12px' }}>
+          <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-soft)' }} size={16} />
+          <input 
+            type="text" 
+            placeholder="Search by customer name or phone number..." 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '11px 12px 11px 36px',
+              borderRadius: 'var(--radius-s)',
+              border: '1px solid var(--line)',
+              background: 'var(--card)',
+              color: 'var(--ink)',
+              fontSize: '13.5px',
+              fontFamily: 'inherit'
+            }}
+          />
+          {search && (
+            <FiX 
+              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--ink-soft)' }} 
+              onClick={() => setSearch('')} 
+            />
+          )}
+        </div>
+
+        <div className="stock-filter-row">
+          <button 
+            className={`stock-filter-chip ${statusFilter === 'All' ? 'active' : ''}`} 
+            onClick={() => setStatusFilter('All')}
+          >
+            All Clients
+          </button>
+          <button 
+            className={`stock-filter-chip ${statusFilter === 'Pending' ? 'active' : ''}`} 
+            onClick={() => setStatusFilter('Pending')}
+          >
+            Credit Pending Tab
+          </button>
+          <button 
+            className={`stock-filter-chip ${statusFilter === 'Healthy' ? 'active' : ''}`} 
+            onClick={() => setStatusFilter('Healthy')}
+          >
+            Healthy Accounts
+          </button>
         </div>
       </div>
 
-      {/* ===== 3. SEARCH & FILTER CHIPS ===== */}
-      <div style={{ position: 'relative', marginBottom: '12px' }}>
-        <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-soft)' }} size={16} />
-        <input 
-          type="text" 
-          placeholder="Search by customer name or phone number..." 
-          value={search} 
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '11px 12px 11px 36px',
-            borderRadius: 'var(--radius-s)',
-            border: '1px solid var(--line)',
-            background: 'var(--card)',
-            color: 'var(--ink)',
-            fontSize: '13.5px',
-            fontFamily: 'inherit'
-          }}
-        />
-        {search && (
-          <FiX 
-            style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--ink-soft)' }} 
-            onClick={() => setSearch('')} 
-          />
-        )}
-      </div>
-
-      <div className="stock-filter-row">
-        <button 
-          className={`stock-filter-chip ${statusFilter === 'All' ? 'active' : ''}`} 
-          onClick={() => setStatusFilter('All')}
-        >
-          All Clients
-        </button>
-        <button 
-          className={`stock-filter-chip ${statusFilter === 'Pending' ? 'active' : ''}`} 
-          onClick={() => setStatusFilter('Pending')}
-        >
-          Credit Pending Tab
-        </button>
-        <button 
-          className={`stock-filter-chip ${statusFilter === 'Healthy' ? 'active' : ''}`} 
-          onClick={() => setStatusFilter('Healthy')}
-        >
-          Healthy Accounts
-        </button>
-      </div>
-
-      {/* ===== 4. CUSTOMER LIST CARDS ===== */}
-      <div>
+      {/* ===== 3. CUSTOMER LIST CARDS ===== */}
+      <div className="animate-stagger stagger-3">
         {loading ? (
           <div className="empty-note">Loading customer accounts...</div>
         ) : filteredCustomers.length === 0 ? (
@@ -232,7 +234,7 @@ const Customers = () => {
         <div className="modal-overlay" onClick={() => setShowCollectModal(false)}>
           <div className="modal-container" onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontFamily: 'Fraunces, serif' }}>Collect Credit Payment</h3>
+              <h3 style={{ margin: 0, fontSize: '18px', fontFamily: 'var(--font-heading)' }}>Collect Credit Payment</h3>
               <FiX size={20} style={{ cursor: 'pointer', color: 'var(--ink-soft)' }} onClick={() => setShowCollectModal(false)} />
             </div>
 

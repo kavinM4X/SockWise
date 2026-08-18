@@ -120,8 +120,8 @@ const Expenses = () => {
     <div className="page" id="page-expenses">
       
       {/* ===== 1. EXPENSE ANALYTICS HERO CARD ===== */}
-      <div className="exp-hero-card">
-        <div className="eh-label">Today's Total Expenses</div>
+      <div className="exp-hero-card animate-stagger stagger-1">
+        <div className="eh-label">Today's Operating Expenses</div>
         <div className="eh-value">{fmt(expenseStats?.todayExpenses || 0)}</div>
 
         <div className="exp-hero-grid">
@@ -142,21 +142,22 @@ const Expenses = () => {
         </div>
       </div>
 
-      {/* ===== 2. ACTION HEADER ===== */}
-      <div className="stock-action-header">
-        <div className="section-title" style={{ margin: 0 }}>
-          <span>Expense Logs</span>
-          <span className="count">({filteredExpenses.length})</span>
+      {/* ===== 2. ACTION HEADER & FILTERS ===== */}
+      <div className="animate-stagger stagger-2">
+        <div className="stock-action-header">
+          <div className="section-title" style={{ margin: 0 }}>
+            <span>Expense Logs</span>
+            <span className="count">({filteredExpenses.length})</span>
+          </div>
+          <button 
+            className="btn-add-product" 
+            style={{ background: 'var(--danger)' }} 
+            onClick={openCreateModal}
+          >
+            <FiPlus size={16} />
+            <span>Log Expense</span>
+          </button>
         </div>
-        <button 
-          className="btn-add-product" 
-          style={{ background: 'var(--danger)' }} 
-          onClick={openCreateModal}
-        >
-          <FiPlus size={16} />
-          <span>Log Expense</span>
-        </button>
-      </div>
 
       {/* ===== 3. SEARCH & FILTER CHIPS ===== */}
       <div style={{ position: 'relative', marginBottom: '12px' }}>
@@ -202,9 +203,10 @@ const Expenses = () => {
           </button>
         ))}
       </div>
+      </div>
 
       {/* ===== 4. EXPENSE LIST CARDS ===== */}
-      <div>
+      <div className="animate-stagger stagger-3">
         {filteredExpenses.length === 0 ? (
           <div className="empty-note">
             {search ? `No expenses matching "${search}"` : 'No expense logs found. Tap "+ Log Expense" to add one.'}
@@ -249,7 +251,7 @@ const Expenses = () => {
         <div className="modal-overlay" onClick={resetForm}>
           <div className="modal-container" onClick={evt => evt.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontFamily: 'Fraunces, serif' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontFamily: 'var(--font-heading)' }}>
                 {editingId ? 'Edit Expense Record' : 'Log New Expense'}
               </h3>
               <FiX size={20} style={{ cursor: 'pointer', color: 'var(--ink-soft)' }} onClick={resetForm} />

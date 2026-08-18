@@ -133,7 +133,7 @@ const Stock = () => {
     <div className="page" id="page-stock">
       
       {/* ===== 1. INVENTORY HEALTH HERO CARD ===== */}
-      <div className="stock-hero-card">
+      <div className="stock-hero-card animate-stagger stagger-1">
         <div className="sh-label">Total Inventory Valuation</div>
         <div className="sh-value">{fmt(totalValuation)}</div>
 
@@ -155,69 +155,71 @@ const Stock = () => {
         </div>
       </div>
 
-      {/* ===== 2. ACTION HEADER ===== */}
-      <div className="stock-action-header">
-        <div className="section-title" style={{ margin: 0 }}>
-          <span>Product Catalog</span>
-          <span className="count">({filteredProducts.length})</span>
+      {/* ===== 2. ACTION HEADER & FILTERS ===== */}
+      <div className="animate-stagger stagger-2">
+        <div className="stock-action-header">
+          <div className="section-title" style={{ margin: 0 }}>
+            <span>Product Catalog</span>
+            <span className="count">({filteredProducts.length})</span>
+          </div>
+          <button className="btn-add-product" onClick={openCreateModal}>
+            <FiPlus size={16} />
+            <span>Add Product</span>
+          </button>
         </div>
-        <button className="btn-add-product" onClick={openCreateModal}>
-          <FiPlus size={16} />
-          <span>Add Product</span>
-        </button>
-      </div>
 
-      {/* ===== 3. SEARCH & FILTER CHIPS ===== */}
-      <div style={{ position: 'relative', marginBottom: '12px' }}>
-        <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-soft)' }} size={16} />
-        <input 
-          type="text" 
-          placeholder="Search product by name or ID (SK-...)" 
-          value={search} 
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '11px 12px 11px 36px',
-            borderRadius: 'var(--radius-s)',
-            border: '1px solid var(--line)',
-            background: 'var(--card)',
-            color: 'var(--ink)',
-            fontSize: '13.5px',
-            fontFamily: 'inherit'
-          }}
-        />
-        {search && (
-          <FiX 
-            style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--ink-soft)' }} 
-            onClick={() => setSearch('')} 
+        {/* SEARCH & FILTER CHIPS */}
+        <div style={{ position: 'relative', marginBottom: '12px' }}>
+          <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-soft)' }} size={16} />
+          <input 
+            type="text" 
+            placeholder="Search product by name or ID (SK-...)" 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '11px 12px 11px 36px',
+              borderRadius: 'var(--radius-s)',
+              border: '1px solid var(--line)',
+              background: 'var(--card)',
+              color: 'var(--ink)',
+              fontSize: '13.5px',
+              fontFamily: 'inherit'
+            }}
           />
-        )}
+          {search && (
+            <FiX 
+              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: 'var(--ink-soft)' }} 
+              onClick={() => setSearch('')} 
+            />
+          )}
+        </div>
+
+        <div className="stock-filter-row">
+          <button 
+            className={`stock-filter-chip ${filterTab === 'all' ? 'active' : ''}`} 
+            onClick={() => setFilterTab('all')}
+          >
+            All Items ({products.length})
+          </button>
+          <button 
+            className={`stock-filter-chip danger-chip ${filterTab === 'low' ? 'active' : ''}`} 
+            onClick={() => setFilterTab('low')}
+          >
+            <FiAlertTriangle style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+            Low Stock ({lowStockCount})
+          </button>
+          <button 
+            className={`stock-filter-chip ${filterTab === 'healthy' ? 'active' : ''}`} 
+            onClick={() => setFilterTab('healthy')}
+          >
+            Healthy ({products.length - lowStockCount})
+          </button>
+        </div>
       </div>
 
-      <div className="stock-filter-row">
-        <button 
-          className={`stock-filter-chip ${filterTab === 'all' ? 'active' : ''}`} 
-          onClick={() => setFilterTab('all')}
-        >
-          All Items ({products.length})
-        </button>
-        <button 
-          className={`stock-filter-chip danger-chip ${filterTab === 'low' ? 'active' : ''}`} 
-          onClick={() => setFilterTab('low')}
-        >
-          <FiAlertTriangle style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-          Low Stock ({lowStockCount})
-        </button>
-        <button 
-          className={`stock-filter-chip ${filterTab === 'healthy' ? 'active' : ''}`} 
-          onClick={() => setFilterTab('healthy')}
-        >
-          Healthy ({products.length - lowStockCount})
-        </button>
-      </div>
-
-      {/* ===== 4. PRODUCT CARDS LIST ===== */}
-      <div>
+      {/* ===== 3. PRODUCT CARDS LIST ===== */}
+      <div className="animate-stagger stagger-3">
         {filteredProducts.length === 0 ? (
           <div className="empty-note">
             {search ? `No products matching "${search}"` : 'No inventory items found. Tap "+ Add Product" to create one.'}
@@ -278,7 +280,7 @@ const Stock = () => {
         <div className="modal-overlay" onClick={handleCancelModal}>
           <div className="modal-container" onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontFamily: 'Fraunces, serif' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontFamily: 'var(--font-heading)' }}>
                 {editId ? 'Edit Inventory Item' : 'Add New Product'}
               </h3>
               <FiX size={20} style={{ cursor: 'pointer', color: 'var(--ink-soft)' }} onClick={handleCancelModal} />
@@ -385,7 +387,7 @@ const Stock = () => {
           <div className="modal-container" onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
               <div>
-                <h3 style={{ margin: '0 0 4px', fontSize: '20px', fontFamily: 'Fraunces, serif' }}>{viewProduct.productName}</h3>
+                <h3 style={{ margin: '0 0 4px', fontSize: '20px', fontFamily: 'var(--font-heading)' }}>{viewProduct.productName}</h3>
                 <p style={{ margin: 0, color: 'var(--ink-soft)', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
                   ID: {viewProduct.productId}
                 </p>

@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 
 const Login = () => {
-  const [phone, setPhone] = useState('9876543210');
-  const [password, setPassword] = useState('sockwise');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -44,7 +44,7 @@ const Login = () => {
         <label>Phone number</label>
         <input 
           type="tel" 
-          placeholder="98765 43210" 
+          placeholder="Enter phone number" 
           value={phone} 
           onChange={(e) => setPhone(e.target.value)} 
         />
@@ -53,7 +53,7 @@ const Login = () => {
         <label>Password</label>
         <input 
           type="password" 
-          placeholder="••••••••" 
+          placeholder="Enter password" 
           value={password} 
           onChange={(e) => setPassword(e.target.value)} 
         />

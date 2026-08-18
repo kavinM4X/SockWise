@@ -22,10 +22,11 @@ import {
   PointElement,
   LineElement,
   Tooltip,
+  Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
 const Dashboard = () => {
   const { dashboardStats, lowStockProducts, sales: salesList, currentUser } = useContext(AppContext);
@@ -69,7 +70,7 @@ const Dashboard = () => {
     <div className="page" id="page-dashboard">
       
       {/* ===== 1. WELCOME BANNER ===== */}
-      <div className="dash-welcome-banner">
+      <div className="dash-welcome-banner animate-stagger stagger-1">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div className="dw-greeting">Hello, {ownerGreeting} 👋</div>
@@ -83,7 +84,7 @@ const Dashboard = () => {
       </div>
 
       {/* ===== 2. QUICK ACTION SHORTCUTS ===== */}
-      <div className="quick-actions-bar">
+      <div className="quick-actions-bar animate-stagger stagger-2">
         <button className="quick-act-btn primary-act" onClick={() => navigate('/sale')}>
           <FiPlus />
           <span>New Sale</span>
@@ -99,7 +100,7 @@ const Dashboard = () => {
       </div>
 
       {/* ===== 3. HERO KPI METRIC GRID ===== */}
-      <div className="stat-grid" style={{ marginBottom: '20px' }}>
+      <div className="stat-grid animate-stagger stagger-3" style={{ marginBottom: '20px' }}>
         
         {/* Today's Sales Card */}
         <div className="kpi-card accent-card">
@@ -164,7 +165,7 @@ const Dashboard = () => {
 
       {/* ===== 4. EMBEDDED REVENUE TREND CHART ===== */}
       {charts && (
-        <div className="chart-card">
+        <div className="chart-card animate-stagger stagger-4">
           <div className="ct-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>6-Month Financial Trend</span>
             <span style={{ fontSize: '11px', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600 }} onClick={() => navigate('/report')}>
@@ -200,93 +201,97 @@ const Dashboard = () => {
       )}
 
       {/* ===== 5. INVENTORY & BUSINESS HIGHLIGHTS ===== */}
-      <h4 className="subhead" style={{ marginTop: '24px' }}>Inventory & Business Summary</h4>
-      <div className="stat-grid" style={{ marginTop: '12px' }}>
-        <div className="stat-card">
-          <div className="stat-label">Total Products</div>
-          <div className="stat-value num" style={{ fontSize: '19px' }}>{inventory.totalProducts}</div>
-          <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '4px' }}>{inventory.totalStock} total units</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Total Orders</div>
-          <div className="stat-value num" style={{ fontSize: '19px' }}>{business.totalOrders}</div>
-          <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '4px' }}>Avg: {fmt(business.averageOrderValue)}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Monthly Revenue</div>
-          <div className="stat-value num" style={{ fontSize: '19px' }}>{fmt(revenue.monthlyRevenue)}</div>
-          <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '4px' }}>Total: {fmt(revenue.totalRevenue)}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">Top Customer</div>
-          <div className="stat-value num" style={{ fontSize: '15px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {customers.topCustomer || 'N/A'}
+      <div className="animate-stagger stagger-5">
+        <h4 className="subhead" style={{ marginTop: '24px' }}>Inventory & Business Summary</h4>
+        <div className="stat-grid" style={{ marginTop: '12px' }}>
+          <div className="stat-card">
+            <div className="stat-label">Total Products</div>
+            <div className="stat-value num" style={{ fontSize: '19px' }}>{inventory.totalProducts}</div>
+            <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '4px' }}>{inventory.totalStock} total units</div>
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '4px' }}>{customers.totalCustomers} customers</div>
+          <div className="stat-card">
+            <div className="stat-label">Total Orders</div>
+            <div className="stat-value num" style={{ fontSize: '19px' }}>{business.totalOrders}</div>
+            <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '4px' }}>Avg: {fmt(business.averageOrderValue)}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Monthly Revenue</div>
+            <div className="stat-value num" style={{ fontSize: '19px' }}>{fmt(revenue.monthlyRevenue)}</div>
+            <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '4px' }}>Total: {fmt(revenue.totalRevenue)}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Top Customer</div>
+            <div className="stat-value num" style={{ fontSize: '15px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {customers.topCustomer || 'N/A'}
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--ink-soft)', marginTop: '4px' }}>{customers.totalCustomers} customers</div>
+          </div>
+        </div>
+
+        {/* Actionable Low Stock Alerts */}
+        <div className="section-title">
+          <span>Low Stock Alerts</span>
+          <span className="count">{inventory.lowStock} item{inventory.lowStock !== 1 ? 's' : ''}</span>
+        </div>
+        
+        <div style={{ marginBottom: '24px' }}>
+          {lowStockProducts.length === 0 ? (
+            <div className="empty-note">All inventory levels are healthy.</div>
+          ) : (
+            lowStockProducts.map((p, idx) => (
+              <div className="alert-row" key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div className="a-name">{p.productName}</div>
+                  <div className="a-sub">Min required: {p.minimumStock} | ID: {p.productId}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="a-qty">{p.stockQuantity} left</div>
+                  <button className="restock-btn" onClick={() => navigate('/stock')}>
+                    Restock
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      {/* ===== 6. ACTIONABLE LOW STOCK ALERTS ===== */}
-      <div className="section-title">
-        <span>Low Stock Alerts</span>
-        <span className="count">{inventory.lowStock} item{inventory.lowStock !== 1 ? 's' : ''}</span>
-      </div>
-      
-      <div style={{ marginBottom: '24px' }}>
-        {lowStockProducts.length === 0 ? (
-          <div className="empty-note">All inventory levels are healthy.</div>
-        ) : (
-          lowStockProducts.map((p, idx) => (
-            <div className="alert-row" key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div className="a-name">{p.productName}</div>
-                <div className="a-sub">Min required: {p.minimumStock} | ID: {p.productId}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div className="a-qty">{p.stockQuantity} left</div>
-                <button className="restock-btn" onClick={() => navigate('/stock')}>
-                  Restock
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      {/* ===== 6. RECENT TRANSACTIONS ACTIVITY FEED ===== */}
+      <div className="animate-stagger stagger-6">
+        <div className="section-title">
+          <span>Recent Transactions</span>
+          <span className="count">Last {recentSales.length}</span>
+        </div>
 
-      {/* ===== 7. RECENT TRANSACTIONS ACTIVITY FEED ===== */}
-      <div className="section-title">
-        <span>Recent Transactions</span>
-        <span className="count">Last {recentSales.length}</span>
-      </div>
-
-      <div>
-        {recentSales.length === 0 ? (
-          <div className="empty-note">No recent transactions recorded.</div>
-        ) : (
-          recentSales.map((s) => (
-            <div className="list-row" key={s._id}>
-              <div>
-                <div className="lr-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>{s.customerName || 'Walk-in Customer'}</span>
-                  <span className={`payment-badge ${s.paymentMethod || 'Cash'}`}>
-                    {s.paymentMethod || 'Cash'}
-                  </span>
+        <div>
+          {recentSales.length === 0 ? (
+            <div className="empty-note">No recent transactions recorded.</div>
+          ) : (
+            recentSales.map((s) => (
+              <div className="list-row" key={s._id}>
+                <div>
+                  <div className="lr-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>{s.customerName || 'Walk-in Customer'}</span>
+                    <span className={`payment-badge ${s.paymentMethod || 'Cash'}`}>
+                      {s.paymentMethod || 'Cash'}
+                    </span>
+                  </div>
+                  <div className="lr-sub">
+                    <FiClock style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                    {new Date(s.saleDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                    {s.invoiceNumber ? ` • ${s.invoiceNumber}` : ''}
+                  </div>
                 </div>
-                <div className="lr-sub">
-                  <FiClock style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                  {new Date(s.saleDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                  {s.invoiceNumber ? ` • ${s.invoiceNumber}` : ''}
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="lr-amt pos">{fmt(s.total)}</div>
-                <div style={{ fontSize: '10px', color: 'var(--ink-soft)' }}>
-                  {s.items ? `${s.items.length} item(s)` : ''}
+                <div style={{ textAlign: 'right' }}>
+                  <div className="lr-amt pos">{fmt(s.total)}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--ink-soft)' }}>
+                    {s.items ? `${s.items.length} item(s)` : ''}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
-        )}
+            ))
+          )}
+        </div>
       </div>
 
     </div>

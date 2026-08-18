@@ -61,7 +61,7 @@ const Settings = () => {
     <div className="page" id="page-settings">
       
       {/* ===== 1. SYSTEM PREFERENCES CARD ===== */}
-      <div className="settings-group-card">
+      <div className="settings-group-card animate-stagger stagger-1">
         <div className="sg-head">
           <FiSliders style={{ color: 'var(--primary)' }} />
           <span>System Preferences</span>
@@ -90,7 +90,7 @@ const Settings = () => {
       </div>
 
       {/* ===== 2. DATABASE BACKUP & RESTORE CARD ===== */}
-      <div className="settings-group-card">
+      <div className="settings-group-card animate-stagger stagger-2">
         <div className="sg-head">
           <FiDatabase style={{ color: 'var(--accent)' }} />
           <span>Database Backup & Disaster Recovery</span>

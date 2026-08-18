@@ -97,7 +97,7 @@ const Profile = () => {
     <div className="page" id="page-profile">
       
       {/* ===== 1. EXECUTIVE STORE BANNER ===== */}
-      <div className="profile-banner-card">
+      <div className="profile-banner-card animate-stagger stagger-1">
         <div className="profile-avatar-large">
           {getInitials(profileData.shopName || profileData.ownerName)}
         </div>
@@ -115,7 +115,7 @@ const Profile = () => {
       </div>
 
       {/* ===== 2. TAB CONTROLS ===== */}
-      <div className="stock-filter-row" style={{ marginBottom: '20px' }}>
+      <div className="stock-filter-row animate-stagger stagger-2" style={{ marginBottom: '20px' }}>
         <button 
           className={`stock-filter-chip ${activeTab === 'store' ? 'active' : ''}`} 
           onClick={() => setActiveTab('store')}
@@ -138,7 +138,7 @@ const Profile = () => {
 
       {/* ===== TAB 1: STORE PROFILE ===== */}
       {activeTab === 'store' && (
-        <div className="settings-group-card">
+        <div className="settings-group-card animate-stagger stagger-3">
           <div className="sg-head">
             <FiBriefcase style={{ color: 'var(--primary)' }} />
             <span>Business Information</span>

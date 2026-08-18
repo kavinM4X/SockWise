@@ -117,7 +117,7 @@ const Report = () => {
 
       {/* ===== 2. FINANCIAL SUMMARY HERO CARD ===== */}
       {summary && (
-        <div className="report-hero-card">
+        <div className="report-hero-card animate-stagger stagger-1">
           <div className="rh-header">
             <span className="rh-label">{reportRange} Net Profit</span>
             <span className="badge-pill success" style={{ fontSize: '10.5px' }}>
