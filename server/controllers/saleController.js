@@ -28,7 +28,7 @@ const generateInvoiceNumber = async (userId) => {
 // @access  Private
 export const createSale = async (req, res, next) => {
   try {
-    const { customerName, customerPhone, items, discount = 0, paymentMethod, notes } = req.body;
+    const { customerName, customerPhone, items, discount = 0, paymentMethod, notes, advancePayment = 0 } = req.body;
 
     if (!items || items.length === 0) {
       res.status(400);
@@ -86,8 +86,16 @@ export const createSale = async (req, res, next) => {
     }
 
     const total = subtotal - discount;
+    const parsedAdvance = paymentMethod === 'Credit' ? Math.min(Math.max(parseFloat(advancePayment) || 0, 0), total) : 0;
+    const creditTabAmount = Math.max(total - parsedAdvance, 0);
+
     const invoiceNumber = await generateInvoiceNumber(req.user.id);
-    const paymentStatus = paymentMethod === 'Credit' ? 'Pending' : 'Paid';
+    const paymentStatus = paymentMethod === 'Credit' && creditTabAmount > 0 ? 'Pending' : 'Paid';
+
+    let finalNotes = notes || '';
+    if (paymentMethod === 'Credit' && parsedAdvance > 0) {
+      finalNotes = finalNotes ? `${finalNotes} (Down Payment: ₹${parsedAdvance})` : `Down Payment: ₹${parsedAdvance}`;
+    }
 
     const sale = new Sale({
       user: req.user.id,
@@ -101,7 +109,8 @@ export const createSale = async (req, res, next) => {
       totalProfit,
       paymentMethod,
       paymentStatus,
-      notes,
+      advancePayment: parsedAdvance,
+      notes: finalNotes,
     });
 
     await sale.save();
@@ -110,7 +119,7 @@ export const createSale = async (req, res, next) => {
     if (paymentMethod === 'Credit') {
       let customer = await Customer.findOne({ user: req.user.id, customerPhone });
       if (customer) {
-        customer.outstandingBalance += total;
+        customer.outstandingBalance = Math.round((customer.outstandingBalance + creditTabAmount) * 100) / 100;
         if (!customer.customerName) customer.customerName = customerName;
         await customer.save();
       } else {
@@ -118,7 +127,7 @@ export const createSale = async (req, res, next) => {
           user: req.user.id,
           customerName,
           customerPhone,
-          outstandingBalance: total
+          outstandingBalance: Math.round(creditTabAmount * 100) / 100
         }]);
       }
     }

@@ -64,21 +64,28 @@ const Customers = () => {
 
   const handleCollect = (customer) => {
     setSelectedCustomer(customer);
-    setAmount(customer.outstandingBalance);
+    setAmount(Math.round((customer.outstandingBalance || 0) * 100) / 100);
     setShowCollectModal(true);
   };
 
   const setShortcutAmount = (pct) => {
     if (!selectedCustomer) return;
-    const calc = Math.round(selectedCustomer.outstandingBalance * pct);
+    const calc = Math.round((selectedCustomer.outstandingBalance || 0) * pct * 100) / 100;
     setAmount(calc);
   };
 
   const submitCollect = async (e) => {
     e.preventDefault();
     const parseAmt = parseFloat(amount);
-    if (!parseAmt || parseAmt <= 0 || parseAmt > selectedCustomer.outstandingBalance) {
+    const roundedMax = Math.round((selectedCustomer.outstandingBalance || 0) * 100) / 100;
+
+    if (isNaN(parseAmt) || parseAmt <= 0) {
       toast.error('Enter a valid amount to collect');
+      return;
+    }
+    
+    if (parseAmt > roundedMax + 0.5) {
+      toast.error(`Collection amount cannot exceed outstanding balance (${fmt(roundedMax)})`);
       return;
     }
     
@@ -253,11 +260,11 @@ const Customers = () => {
                   <label>Collection Amount (₹)</label>
                   <input 
                     type="number" 
+                    step="any"
                     placeholder="Enter amount" 
                     value={amount} 
                     onChange={e => setAmount(e.target.value)}
-                    max={selectedCustomer.outstandingBalance}
-                    min={1}
+                    min={0.01}
                     autoFocus
                     required
                   />

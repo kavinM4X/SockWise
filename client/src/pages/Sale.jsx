@@ -32,6 +32,8 @@ const Sale = () => {
   const [discount, setDiscount] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedMethod, setSelectedMethod] = useState('Cash');
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  const [advancePayment, setAdvancePayment] = useState('0');
   
   const [selectedProductId, setSelectedProductId] = useState('');
   const [quantity, setQuantity] = useState('1');
@@ -191,6 +193,7 @@ const Sale = () => {
       discount: sDiscount,
       notes: compiledNotes,
       paymentMethod: selectedMethod,
+      advancePayment: selectedMethod === 'Credit' ? (parseFloat(advancePayment) || 0) : 0,
     });
 
     if (success) {
@@ -200,6 +203,7 @@ const Sale = () => {
       setDiscount('');
       setNotes('');
       setSelectedMethod('Cash');
+      setAdvancePayment('0');
       setItems([]);
     }
   };
@@ -223,31 +227,8 @@ const Sale = () => {
   return (
     <div className="page" id="page-sale">
 
-      {/* ===== 1. POS TERMINAL HERO HEADER ===== */}
-      <div className="pos-hero-card animate-stagger stagger-1">
-        <div className="ph-label">Checkout Terminal</div>
-        <div className="ph-value">{items.length} items in cart</div>
-
-        <div className="pos-hero-grid">
-          <div className="ph-item">
-            <div className="ph-item-title">Subtotal</div>
-            <div className="ph-item-val">{fmt(subtotal)}</div>
-          </div>
-          <div className="ph-item">
-            <div className="ph-item-title">Fitting Charge</div>
-            <div className="ph-item-val">{fmt(parsedFitting)}</div>
-          </div>
-          <div className="ph-item">
-            <div className="ph-item-title">Total Payable</div>
-            <div className="ph-item-val" style={{ color: '#4ADE80' }}>
-              {fmt(total)}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ===== 2. TERMINAL NAVIGATION TABS ===== */}
-      <div className="pos-tab-bar animate-stagger stagger-2">
+      {/* ===== 1. TERMINAL NAVIGATION TABS ===== */}
+      <div className="pos-tab-bar animate-stagger stagger-1">
         <button 
           className={`pos-tab-btn ${activeTab === 'newBilling' ? 'active' : ''}`}
           onClick={() => setActiveTab('newBilling')}
@@ -436,12 +417,32 @@ const Sale = () => {
               <button 
                 key={method} 
                 className={`chip ${selectedMethod === method ? 'active' : ''}`} 
-                onClick={() => setSelectedMethod(method)}
+                onClick={() => {
+                  setSelectedMethod(method);
+                  if (method === 'Credit') {
+                    setShowCreditModal(true);
+                  }
+                }}
               >
                 {method} {method === 'Credit' ? '(Pending Tab)' : ''}
               </button>
             ))}
           </div>
+
+          {selectedMethod === 'Credit' && (
+            <div style={{ marginTop: '8px', fontSize: '12px', background: 'var(--accent-tint)', border: '1px solid #DB7B2B33', color: '#8A4A15', padding: '8px 12px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>
+                Down-Payment: <strong>{fmt(parseFloat(advancePayment) || 0)}</strong> • Added to Tab: <strong>{fmt(Math.max(total - (parseFloat(advancePayment) || 0), 0))}</strong>
+              </span>
+              <button 
+                type="button" 
+                onClick={() => setShowCreditModal(true)} 
+                style={{ background: 'none', border: 'none', color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+              >
+                Edit Advance
+              </button>
+            </div>
+          )}
 
           <div className="bill-total">
             <span className="bt-label">Total Payable Bill</span>
@@ -709,6 +710,108 @@ const Sale = () => {
               >
                 Done / Back to Billing
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== CREDIT DOWN-PAYMENT MODAL ===== */}
+      {showCreditModal && (
+        <div className="modal-overlay" onClick={() => setShowCreditModal(false)}>
+          <div className="modal-container" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontFamily: 'var(--font-heading)', color: 'var(--accent)' }}>
+                  Credit Sale — Initial Advance
+                </h3>
+                <div style={{ fontSize: '12px', color: 'var(--ink-soft)' }}>
+                  Did the customer pay any down-payment / advance right now? (Optional)
+                </div>
+              </div>
+              <FiX size={20} style={{ cursor: 'pointer', color: 'var(--ink-soft)' }} onClick={() => setShowCreditModal(false)} />
+            </div>
+
+            <div className="field-dark">
+              {/* Order Info Summary */}
+              <div style={{ background: 'var(--paper)', padding: '12px 14px', borderRadius: 'var(--radius-s)', marginBottom: '16px', border: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                  <span style={{ color: 'var(--ink-soft)' }}>Customer:</span>
+                  <strong>{name.trim() || 'Walk-in Customer'} {phone ? `(${phone})` : ''}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                  <span style={{ color: 'var(--ink-soft)' }}>Total Bill Amount:</span>
+                  <span className="num" style={{ fontSize: '15px', fontWeight: 700, color: 'var(--primary)' }}>{fmt(total)}</span>
+                </div>
+              </div>
+
+              {/* Advance Amount Input */}
+              <div className="field">
+                <label>Down Payment Paid Right Now (₹)</label>
+                <input 
+                  type="number" 
+                  placeholder="0" 
+                  value={advancePayment} 
+                  onChange={e => setAdvancePayment(e.target.value)} 
+                  style={{ fontSize: '16px', fontWeight: 600, color: '#4ADE80' }}
+                />
+              </div>
+
+              {/* Preset Quick Chips */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                <button 
+                  type="button"
+                  className="stock-filter-chip"
+                  style={{ flex: 1, padding: '8px', fontSize: '12px', textAlign: 'center' }}
+                  onClick={() => setAdvancePayment('0')}
+                >
+                  ₹0 (Full Credit)
+                </button>
+                <button 
+                  type="button"
+                  className="stock-filter-chip"
+                  style={{ flex: 1, padding: '8px', fontSize: '12px', textAlign: 'center' }}
+                  onClick={() => setAdvancePayment(String(Math.round(total / 2)))}
+                >
+                  50% ({fmt(Math.round(total / 2))})
+                </button>
+              </div>
+
+              {/* Real-time Ledger Balance Breakdown */}
+              {(() => {
+                const adv = Math.min(Math.max(parseFloat(advancePayment) || 0, 0), total);
+                const remTab = Math.max(total - adv, 0);
+                return (
+                  <div style={{ background: 'var(--accent-tint)', border: '1px solid #DB7B2B33', borderRadius: 'var(--radius-s)', padding: '12px 14px', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', marginBottom: '4px', color: '#8A4A15' }}>
+                      <span>Down Payment Received:</span>
+                      <span className="num" style={{ fontWeight: 600 }}>{fmt(adv)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px', fontWeight: 700, color: '#DB7B2B' }}>
+                      <span>Added to Customer Tab:</span>
+                      <span className="num">{fmt(remTab)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ flex: 1, background: 'var(--accent)', color: '#fff' }}
+                  onClick={() => setShowCreditModal(false)}
+                >
+                  Save Credit Settings
+                </button>
+                <button 
+                  type="button"
+                  className="btn"
+                  style={{ background: 'var(--paper)', border: '1px solid var(--line)', color: 'var(--ink)' }}
+                  onClick={() => { setAdvancePayment('0'); setShowCreditModal(false); }}
+                >
+                  Skip (₹0 Advance)
+                </button>
+              </div>
             </div>
           </div>
         </div>

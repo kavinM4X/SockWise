@@ -119,7 +119,7 @@ export const collectPayment = async (req, res, next) => {
       throw new Error('Customer not found');
     }
 
-    customer.outstandingBalance -= amount;
+    customer.outstandingBalance = Math.max(Math.round((customer.outstandingBalance - amount) * 100) / 100, 0);
     const updatedCustomer = await customer.save();
     
     res.json(updatedCustomer);

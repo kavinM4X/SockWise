@@ -81,6 +81,10 @@ const saleSchema = new mongoose.Schema(
     notes: {
       type: String,
     },
+    advancePayment: {
+      type: Number,
+      default: 0,
+    },
     saleDate: {
       type: Date,
       default: Date.now,
