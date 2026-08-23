@@ -22,18 +22,18 @@ export const AppProvider = ({ children }) => {
   const loadProducts = async () => {
     if (!currentUser) return;
     try {
-      const data = await productService.getProducts({ limit: 1000 });
-      setProducts(data.products || []);
-      const lowStockData = await productService.getLowStock();
+      const [data, lowStockData, salesData, expenseData, stats] = await Promise.all([
+        productService.getProducts({ limit: 1000 }),
+        productService.getLowStock(),
+        saleService.getSales({ limit: 1000 }),
+        expenseService.getExpenses({ limit: 1000 }),
+        reportService.getDashboard(),
+      ]);
+
+      setProducts(data?.products || []);
       setLowStockProducts(lowStockData || []);
-      
-      const salesData = await saleService.getSales({ limit: 1000 });
-      setSales(salesData.sales || []);
-      
-      const expenseData = await expenseService.getExpenses({ limit: 1000 });
-      setExpenses(expenseData.expenses || []);
-      
-      const stats = await reportService.getDashboard();
+      setSales(salesData?.sales || []);
+      setExpenses(expenseData?.expenses || []);
       setDashboardStats(stats);
     } catch (error) {
       toast.error('Failed to load data');
