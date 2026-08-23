@@ -42,6 +42,7 @@ app.use(helmet());
 app.use(cors({
   origin: true,
   credentials: true,
+  maxAge: 86400, // Cache CORS preflight OPTIONS check for 24 hours
 }));
 
 // Request Logging
