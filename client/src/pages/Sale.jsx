@@ -274,43 +274,43 @@ const Sale = () => {
 
           <h4 className="subhead" style={{ marginTop: '18px', marginBottom: '14px' }}>Select Products</h4>
           
-          <div className="row-2" style={{ alignItems: 'flex-end' }}>
-            <div className="field" style={{ flex: 1 }}>
-              <label>Choose Product</label>
-              <div 
-                className="product-select-trigger" 
-                onClick={() => { setPickerSearch(''); setShowProductPickerModal(true); }}
-              >
-                {selectedProductObj ? (
-                  <span>
-                    <strong>{selectedProductObj.productName}</strong> ({fmt(selectedProductObj.sellingPrice)})
-                  </span>
-                ) : (
-                  <span className="pst-placeholder">🔍 Tap to search & select product...</span>
-                )}
-                <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 700 }}>Browse →</span>
-              </div>
+          <div className="field" style={{ marginBottom: '12px' }}>
+            <label>Choose Product</label>
+            <div 
+              className="product-select-trigger" 
+              onClick={() => { setPickerSearch(''); setShowProductPickerModal(true); }}
+            >
+              {selectedProductObj ? (
+                <span>
+                  <strong>{selectedProductObj.productName}</strong> ({fmt(selectedProductObj.sellingPrice)})
+                </span>
+              ) : (
+                <span className="pst-placeholder">🔍 Tap to search & select product...</span>
+              )}
+              <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 700 }}>Browse →</span>
             </div>
-            <div className="field">
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginBottom: '16px' }}>
+            <div className="field" style={{ width: '90px', flexShrink: 0 }}>
               <label>Quantity</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input 
-                  type="number" 
-                  placeholder="1" 
-                  value={quantity} 
-                  onChange={e => setQuantity(e.target.value)} 
-                  style={{ width: '75px', textAlign: 'center' }} 
-                />
-                <button 
-                  className="btn btn-primary" 
-                  onClick={handleAddItem} 
-                  style={{ padding: '12px', width: '46px', height: '46px', flexShrink: 0 }}
-                  title="Add to Cart"
-                >
-                  <FiPlus size={20} />
-                </button>
-              </div>
+              <input 
+                type="number" 
+                placeholder="1" 
+                value={quantity} 
+                onChange={e => setQuantity(e.target.value)} 
+                style={{ textAlign: 'center' }} 
+              />
             </div>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleAddItem} 
+              style={{ flex: 1, padding: '13px 16px', gap: '6px', height: '46px' }}
+              title="Add to Cart"
+            >
+              <FiPlus size={18} />
+              <span>Add to Cart</span>
+            </button>
           </div>
 
           {/* Cart Items List */}

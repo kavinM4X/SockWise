@@ -21,7 +21,7 @@ const AppShell = () => {
   const currentPath = location.pathname;
   const pageTitle = routeTitles[currentPath] || 'Dashboard';
   
-  const showFab = ['/stock', '/sale', '/expenses'].includes(currentPath);
+  const showFab = ['/stock', '/expenses'].includes(currentPath);
 
   const initial = currentUser?.name ? currentUser.name.trim().charAt(0).toUpperCase() : 'S';
 

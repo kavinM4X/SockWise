@@ -22,8 +22,10 @@ const swaggerDocument = JSON.parse(fs.readFileSync(new URL('./swagger.json', imp
 dotenv.config();
 
 // Environment Validation
-const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET', 'PORT'];
+const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+const requiredEnvVars = ['JWT_SECRET', 'PORT'];
 const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+if (!mongoUri) missingVars.push('MONGO_URI / MONGODB_URI');
 if (missingVars.length > 0) {
   console.error(`FATAL ERROR: Missing environment variables: ${missingVars.join(', ')}`);
   process.exit(1);
@@ -91,7 +93,7 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
   // Initialize automated 4-hour health-check scheduler
   initHealthCheckScheduler();
