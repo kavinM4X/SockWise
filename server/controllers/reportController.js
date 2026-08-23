@@ -231,6 +231,7 @@ export const getCustom = async (req, res, next) => {
 
 export const getTopProducts = async (req, res, next) => {
   try {
+    res.setHeader('Cache-Control', 'private, max-age=10');
     const top = await Sale.aggregate([
       { $match: { user: new mongoose.Types.ObjectId(req.user.id) } },
       { $unwind: '$items' },
@@ -244,6 +245,7 @@ export const getTopProducts = async (req, res, next) => {
 
 export const getTopCustomers = async (req, res, next) => {
   try {
+    res.setHeader('Cache-Control', 'private, max-age=10');
     const top = await Sale.aggregate([
       { $match: { user: new mongoose.Types.ObjectId(req.user.id), customerName: { $ne: null } } },
       { $group: { _id: '$customerName', totalSpent: { $sum: '$total' }, orders: { $sum: 1 } } },

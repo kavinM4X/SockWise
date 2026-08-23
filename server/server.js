@@ -15,6 +15,7 @@ import backupRoutes from "./routes/backupRoutes.js";
 import healthRoutes from "./routes/healthRoutes.js";
 import { initHealthCheckScheduler } from "./services/scheduler.js";
 import swaggerUi from "swagger-ui-express";
+import compression from "compression";
 import fs from 'fs';
 
 const swaggerDocument = JSON.parse(fs.readFileSync(new URL('./swagger.json', import.meta.url)));
@@ -34,6 +35,9 @@ if (missingVars.length > 0) {
 connectDB();
 
 const app = express();
+
+// Enable Response Compression (Gzip / Brotli)
+app.use(compression());
 
 // Security Middleware
 app.use(helmet());
