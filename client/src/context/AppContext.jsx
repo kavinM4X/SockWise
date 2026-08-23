@@ -101,7 +101,6 @@ export const AppProvider = ({ children }) => {
       const newProduct = await productService.createProduct(product);
       setProducts([newProduct, ...products]);
       toast.success('Product added to inventory');
-      loadProducts();
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to add product');
@@ -114,7 +113,6 @@ export const AppProvider = ({ children }) => {
       const updatedProduct = await productService.updateProduct(id, productData);
       setProducts(products.map(p => p._id === id ? updatedProduct : p));
       toast.success('Product updated');
-      loadProducts();
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update product');
@@ -127,7 +125,6 @@ export const AppProvider = ({ children }) => {
       await productService.deleteProduct(id);
       setProducts(products.filter(p => p._id !== id));
       toast.success('Product deleted');
-      loadProducts();
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete product');
@@ -140,7 +137,6 @@ export const AppProvider = ({ children }) => {
       const newSale = await saleService.createSale(sale);
       setSales([newSale, ...sales]);
       toast.success(`Sale recorded — Invoice ${newSale.invoiceNumber}`);
-      loadProducts();
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to submit sale');
@@ -153,7 +149,6 @@ export const AppProvider = ({ children }) => {
       await saleService.deleteSale(id);
       setSales(sales.filter(s => s._id !== id));
       toast.success('Sale deleted & stock restored');
-      loadProducts();
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete sale');
@@ -166,7 +161,6 @@ export const AppProvider = ({ children }) => {
       const newExpense = await expenseService.createExpense(expense);
       setExpenses([newExpense, ...expenses]);
       toast.success('Expense logged');
-      loadProducts();
       return true;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to log expense');
