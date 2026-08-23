@@ -143,6 +143,7 @@ export const createSale = async (req, res, next) => {
 // @access  Private
 export const getSales = async (req, res, next) => {
   try {
+    res.setHeader('Cache-Control', 'private, max-age=10');
     const { customerName, customerPhone, invoiceNumber, paymentMethod, startDate, endDate, page = 1, limit = 10 } = req.query;
 
     let query = { user: req.user._id };
@@ -162,12 +163,14 @@ export const getSales = async (req, res, next) => {
 
     const skip = (page - 1) * limit;
 
-    const sales = await Sale.find(query)
-      .sort({ saleDate: -1 })
-      .skip(Number(skip))
-      .limit(Number(limit));
-
-    const total = await Sale.countDocuments(query);
+    const [sales, total] = await Promise.all([
+      Sale.find(query)
+        .sort({ saleDate: -1 })
+        .skip(Number(skip))
+        .limit(Number(limit))
+        .lean(),
+      Sale.countDocuments(query)
+    ]);
 
     res.json({
       sales,

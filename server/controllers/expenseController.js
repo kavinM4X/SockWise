@@ -59,6 +59,7 @@ export const createExpense = async (req, res, next) => {
 // @access  Private
 export const getExpenses = async (req, res, next) => {
   try {
+    res.setHeader('Cache-Control', 'private, max-age=10');
     const { search, category, paymentMethod, startDate, endDate, page = 1, limit = 10 } = req.query;
 
     let query = { user: req.user._id };
@@ -83,12 +84,14 @@ export const getExpenses = async (req, res, next) => {
 
     const skip = (page - 1) * limit;
 
-    const expenses = await Expense.find(query)
-      .sort({ expenseDate: -1, createdAt: -1 })
-      .skip(Number(skip))
-      .limit(Number(limit));
-
-    const total = await Expense.countDocuments(query);
+    const [expenses, total] = await Promise.all([
+      Expense.find(query)
+        .sort({ expenseDate: -1, createdAt: -1 })
+        .skip(Number(skip))
+        .limit(Number(limit))
+        .lean(),
+      Expense.countDocuments(query)
+    ]);
 
     res.json({
       expenses,

@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 // @access  Private
 export const getCustomers = async (req, res, next) => {
   try {
+    res.setHeader('Cache-Control', 'private, max-age=10');
     const { search, page = 1, limit = 10, sort = '-createdAt' } = req.query;
     let query = { user: req.user.id };
 
@@ -19,12 +20,14 @@ export const getCustomers = async (req, res, next) => {
 
     const skip = (page - 1) * limit;
 
-    const customers = await Customer.find(query)
-      .sort(sort)
-      .skip(Number(skip))
-      .limit(Number(limit));
-
-    const total = await Customer.countDocuments(query);
+    const [customers, total] = await Promise.all([
+      Customer.find(query)
+        .sort(sort)
+        .skip(Number(skip))
+        .limit(Number(limit))
+        .lean(),
+      Customer.countDocuments(query)
+    ]);
 
     res.json({
       customers,

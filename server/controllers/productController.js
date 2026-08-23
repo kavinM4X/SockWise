@@ -5,6 +5,7 @@ import Product from '../models/Product.js';
 // @access  Private
 export const getProducts = async (req, res, next) => {
   try {
+    res.setHeader('Cache-Control', 'private, max-age=10');
     const { category, brand, search, page = 1, limit = 10 } = req.query;
 
     let query = { user: req.user._id };
