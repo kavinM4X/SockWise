@@ -50,6 +50,20 @@ export const initHealthCheckScheduler = () => {
   );
 
   console.log(`[Scheduler] Automated 4-hour health-check scheduler active.`);
+
+  // 14-Minute Self Keep-Alive Ping (prevents Render free tier 15-minute sleep / cold-starts)
+  const KEEP_ALIVE_EXPRESSION = '*/14 * * * *';
+  cron.schedule(KEEP_ALIVE_EXPRESSION, async () => {
+    try {
+      const backendUrl = process.env.BACKEND_URL || 'https://sockwise.onrender.com';
+      const pingUrl = `${backendUrl}/api/health`;
+      console.log(`[KeepAlive] Pinging ${pingUrl} to keep Render instance awake...`);
+      await fetch(pingUrl);
+    } catch (err) {
+      console.warn(`[KeepAlive] Self ping failed:`, err.message);
+    }
+  });
+
   return healthCheckCronTask;
 };
 
