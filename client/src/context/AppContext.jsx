@@ -22,7 +22,7 @@ export const AppProvider = ({ children }) => {
   const loadProducts = async () => {
     if (!currentUser) return;
     try {
-      const [data, lowStockData, salesData, expenseData, stats] = await Promise.all([
+      const [dataRes, lowStockRes, salesRes, expenseRes, statsRes] = await Promise.allSettled([
         productService.getProducts({ limit: 1000 }),
         productService.getLowStock(),
         saleService.getSales({ limit: 1000 }),
@@ -30,11 +30,23 @@ export const AppProvider = ({ children }) => {
         reportService.getDashboard(),
       ]);
 
-      setProducts(data?.products || []);
-      setLowStockProducts(lowStockData || []);
-      setSales(salesData?.sales || []);
-      setExpenses(expenseData?.expenses || []);
-      setDashboardStats(stats);
+      if (dataRes.status === 'fulfilled') setProducts(dataRes.value?.products || []);
+      if (lowStockRes.status === 'fulfilled') setLowStockProducts(lowStockRes.value || []);
+      if (salesRes.status === 'fulfilled') setSales(salesRes.value?.sales || []);
+      if (expenseRes.status === 'fulfilled') setExpenses(expenseRes.value?.expenses || []);
+
+      if (statsRes.status === 'fulfilled') {
+        setDashboardStats(statsRes.value);
+      } else {
+        setDashboardStats({
+          inventory: { totalProducts: 0, totalStock: 0, lowStock: 0, outOfStock: 0 },
+          sales: { todaySales: 0, weeklySales: 0, monthlySales: 0, yearlySales: 0 },
+          revenue: { monthlyRevenue: 0, monthlyProfit: 0, totalRevenue: 0, netProfit: 0 },
+          expenses: { todayExpenses: 0, monthlyExpenses: 0, totalExpenses: 0 },
+          customers: { totalCustomers: 0, pendingCredit: 0, topCustomer: 'N/A' },
+          business: { averageOrderValue: 0, totalOrders: 0, bestSellingProduct: 'N/A', highestExpenseCategory: 'N/A' }
+        });
+      }
     } catch (error) {
       toast.error('Failed to load data');
     }
