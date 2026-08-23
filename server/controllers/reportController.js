@@ -179,8 +179,10 @@ export const getDashboard = async (req, res, next) => {
 export const getWeekly = async (req, res, next) => {
   try {
     const { start, end } = getDateBoundaries('weekly');
-    const sales = await getSalesAgg(req.user.id, start, end);
-    const expenses = await getExpenseAgg(req.user.id, start, end);
+    const [sales, expenses] = await Promise.all([
+      getSalesAgg(req.user.id, start, end),
+      getExpenseAgg(req.user.id, start, end)
+    ]);
     res.json({ start, end, revenue: sales.totalRevenue, profit: sales.totalProfit, expenses });
   } catch (error) { next(error); }
 };
@@ -188,8 +190,10 @@ export const getWeekly = async (req, res, next) => {
 export const getMonthly = async (req, res, next) => {
   try {
     const { start, end } = getDateBoundaries('monthly');
-    const sales = await getSalesAgg(req.user.id, start, end);
-    const expenses = await getExpenseAgg(req.user.id, start, end);
+    const [sales, expenses] = await Promise.all([
+      getSalesAgg(req.user.id, start, end),
+      getExpenseAgg(req.user.id, start, end)
+    ]);
     res.json({ start, end, revenue: sales.totalRevenue, profit: sales.totalProfit, expenses });
   } catch (error) { next(error); }
 };
@@ -197,8 +201,10 @@ export const getMonthly = async (req, res, next) => {
 export const getYearly = async (req, res, next) => {
   try {
     const { start, end } = getDateBoundaries('yearly');
-    const sales = await getSalesAgg(req.user.id, start, end);
-    const expenses = await getExpenseAgg(req.user.id, start, end);
+    const [sales, expenses] = await Promise.all([
+      getSalesAgg(req.user.id, start, end),
+      getExpenseAgg(req.user.id, start, end)
+    ]);
     res.json({ start, end, revenue: sales.totalRevenue, profit: sales.totalProfit, expenses });
   } catch (error) { next(error); }
 };
@@ -211,8 +217,10 @@ export const getCustom = async (req, res, next) => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
     
-    const sales = await getSalesAgg(req.user.id, start, end);
-    const expenses = await getExpenseAgg(req.user.id, start, end);
+    const [sales, expenses] = await Promise.all([
+      getSalesAgg(req.user.id, start, end),
+      getExpenseAgg(req.user.id, start, end)
+    ]);
     res.json({ start, end, revenue: sales.totalRevenue, profit: sales.totalProfit, expenses });
   } catch (error) { next(error); }
 };
@@ -295,15 +303,34 @@ export const getCharts = async (req, res, next) => {
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
 
-    const monthlySalesAgg = await Sale.aggregate([
-      { $match: { user: uidObj, saleDate: { $gte: sixMonthsAgo } } },
-      { $group: { _id: { year: { $year: '$saleDate' }, month: { $month: '$saleDate' } }, rev: { $sum: '$total' }, profit: { $sum: '$totalProfit' } } },
-      { $sort: { '_id.year': 1, '_id.month': 1 } }
-    ]);
-    const monthlyExpAgg = await Expense.aggregate([
-      { $match: { user: uidObj, expenseDate: { $gte: sixMonthsAgo } } },
-      { $group: { _id: { year: { $year: '$expenseDate' }, month: { $month: '$expenseDate' } }, amt: { $sum: '$amount' } } },
-      { $sort: { '_id.year': 1, '_id.month': 1 } }
+    const saleMatch = { user: uidObj };
+    const expMatch = { user: uidObj };
+
+    if (range && ['weekly', 'monthly', 'yearly'].includes(range)) {
+      const { start, end } = getDateBoundaries(range);
+      saleMatch.saleDate = { $gte: start, $lte: end };
+      expMatch.expenseDate = { $gte: start, $lte: end };
+    }
+
+    const [monthlySalesAgg, monthlyExpAgg, payments, categories] = await Promise.all([
+      Sale.aggregate([
+        { $match: { user: uidObj, saleDate: { $gte: sixMonthsAgo } } },
+        { $group: { _id: { year: { $year: '$saleDate' }, month: { $month: '$saleDate' } }, rev: { $sum: '$total' }, profit: { $sum: '$totalProfit' } } },
+        { $sort: { '_id.year': 1, '_id.month': 1 } }
+      ]),
+      Expense.aggregate([
+        { $match: { user: uidObj, expenseDate: { $gte: sixMonthsAgo } } },
+        { $group: { _id: { year: { $year: '$expenseDate' }, month: { $month: '$expenseDate' } }, amt: { $sum: '$amount' } } },
+        { $sort: { '_id.year': 1, '_id.month': 1 } }
+      ]),
+      Sale.aggregate([
+        { $match: saleMatch },
+        { $group: { _id: '$paymentMethod', total: { $sum: '$total' } } }
+      ]),
+      Expense.aggregate([
+        { $match: expMatch },
+        { $group: { _id: '$category', total: { $sum: '$amount' } } }
+      ])
     ]);
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -329,29 +356,9 @@ export const getCharts = async (req, res, next) => {
       curr.setMonth(curr.getMonth() + 1);
     }
 
-    // Payment Methods & Category filter match
-    const saleMatch = { user: uidObj };
-    const expMatch = { user: uidObj };
-
-    if (range && ['weekly', 'monthly', 'yearly'].includes(range)) {
-      const { start, end } = getDateBoundaries(range);
-      saleMatch.saleDate = { $gte: start, $lte: end };
-      expMatch.expenseDate = { $gte: start, $lte: end };
-    }
-
-    // Payment Methods
-    const payments = await Sale.aggregate([
-      { $match: saleMatch },
-      { $group: { _id: '$paymentMethod', total: { $sum: '$total' } } }
-    ]);
     const paymentLabels = payments.map(p => p._id);
     const paymentData = payments.map(p => p.total);
 
-    // Categories
-    const categories = await Expense.aggregate([
-      { $match: expMatch },
-      { $group: { _id: '$category', total: { $sum: '$amount' } } }
-    ]);
     const catLabels = categories.map(c => c._id);
     const catData = categories.map(c => c.total);
 
