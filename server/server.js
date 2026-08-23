@@ -75,6 +75,8 @@ app.use(express.urlencoded({ extended: true }));
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+app.get("/favicon.ico", (req, res) => res.status(204).end());
+
 app.get("/", (req, res) => {
   res.send("SockWise Backend is Running 🚀");
 });
