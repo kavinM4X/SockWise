@@ -61,9 +61,27 @@ const Sale = () => {
       toast.error('This product is out of stock!');
       return;
     }
-    setSelectedProductId(product._id);
+    const existingIndex = items.findIndex(i => i.productId === product._id);
+    if (existingIndex > -1) {
+      const updatedItems = [...items];
+      const newQty = updatedItems[existingIndex].quantity + 1;
+      if (product.stockQuantity < newQty) return toast.error(`Only ${product.stockQuantity} in stock`);
+      
+      updatedItems[existingIndex].quantity = newQty;
+      updatedItems[existingIndex].total = newQty * product.sellingPrice;
+      setItems(updatedItems);
+      toast.success(`Increased ${product.productName} quantity to ${newQty}`);
+    } else {
+      setItems([...items, {
+        productId: product._id,
+        productName: product.productName,
+        quantity: 1,
+        sellingPrice: product.sellingPrice,
+        total: product.sellingPrice
+      }]);
+      toast.success(`Added ${product.productName} to cart`);
+    }
     setShowProductPickerModal(false);
-    toast.success(`Selected ${product.productName}`);
   };
 
   const handleDirectAddFromPicker = (product, e) => {
@@ -272,45 +290,16 @@ const Sale = () => {
             </div>
           </div>
 
-          <h4 className="subhead" style={{ marginTop: '18px', marginBottom: '14px' }}>Select Products</h4>
+          <h4 className="subhead" style={{ marginTop: '18px', marginBottom: '14px' }}>Add Products to Cart</h4>
           
-          <div className="field" style={{ marginBottom: '12px' }}>
-            <label>Choose Product</label>
+          <div className="field" style={{ marginBottom: '16px' }}>
             <div 
               className="product-select-trigger" 
               onClick={() => { setPickerSearch(''); setShowProductPickerModal(true); }}
             >
-              {selectedProductObj ? (
-                <span>
-                  <strong>{selectedProductObj.productName}</strong> ({fmt(selectedProductObj.sellingPrice)})
-                </span>
-              ) : (
-                <span className="pst-placeholder">🔍 Tap to search & select product...</span>
-              )}
-              <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 700 }}>Browse →</span>
+              <span className="pst-placeholder">🔍 Tap to search & add product to cart...</span>
+              <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 700 }}>+ Add Items →</span>
             </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginBottom: '16px' }}>
-            <div className="field" style={{ width: '90px', flexShrink: 0 }}>
-              <label>Quantity</label>
-              <input 
-                type="number" 
-                placeholder="1" 
-                value={quantity} 
-                onChange={e => setQuantity(e.target.value)} 
-                style={{ textAlign: 'center' }} 
-              />
-            </div>
-            <button 
-              className="btn btn-primary" 
-              onClick={handleAddItem} 
-              style={{ flex: 1, padding: '13px 16px', gap: '6px', height: '46px' }}
-              title="Add to Cart"
-            >
-              <FiPlus size={18} />
-              <span>Add to Cart</span>
-            </button>
           </div>
 
           {/* Cart Items List */}
