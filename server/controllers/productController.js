@@ -15,12 +15,14 @@ export const getProducts = async (req, res, next) => {
 
     const skip = (page - 1) * limit;
 
-    const products = await Product.find(query)
-      .sort({ createdAt: -1 })
-      .skip(Number(skip))
-      .limit(Number(limit));
-
-    const total = await Product.countDocuments(query);
+    const [products, total] = await Promise.all([
+      Product.find(query)
+        .sort({ createdAt: -1 })
+        .skip(Number(skip))
+        .limit(Number(limit))
+        .lean(),
+      Product.countDocuments(query)
+    ]);
 
     res.json({
       products,
@@ -173,7 +175,7 @@ export const getLowStockProducts = async (req, res, next) => {
     const products = await Product.find({
       user: req.user.id,
       $expr: { $lte: ['$stockQuantity', '$minimumStock'] }
-    }).sort({ stockQuantity: 1 });
+    }).sort({ stockQuantity: 1 }).lean();
 
     res.json(products);
   } catch (error) {
