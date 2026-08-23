@@ -53,5 +53,7 @@ const productSchema = new mongoose.Schema(
 productSchema.index({ user: 1, productName: 1 });
 productSchema.index({ user: 1, category: 1 });
 productSchema.index({ user: 1, brand: 1 });
+productSchema.index({ user: 1, stockQuantity: 1 });
+productSchema.index({ user: 1, createdAt: -1 });
 
 export default mongoose.model('Product', productSchema);

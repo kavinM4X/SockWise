@@ -172,10 +172,14 @@ export const deleteProduct = async (req, res, next) => {
 // @access  Private
 export const getLowStockProducts = async (req, res, next) => {
   try {
+    res.setHeader('Cache-Control', 'private, max-age=10');
     const products = await Product.find({
       user: req.user.id,
       $expr: { $lte: ['$stockQuantity', '$minimumStock'] }
-    }).sort({ stockQuantity: 1 }).lean();
+    })
+      .select('productId productName stockQuantity minimumStock sellingPrice')
+      .sort({ stockQuantity: 1 })
+      .lean();
 
     res.json(products);
   } catch (error) {
