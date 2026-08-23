@@ -38,11 +38,9 @@ const app = express();
 // Security Middleware
 app.use(helmet());
 
-// Production CORS Configuration
+// Production & Development CORS Configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL || 'https://sockwise.vercel.app']
-    : '*',
+  origin: true,
   credentials: true,
 }));
 
