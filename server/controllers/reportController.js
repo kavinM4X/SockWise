@@ -378,17 +378,18 @@ export const exportCSV = async (req, res, next) => {
   try {
     const { startDate, endDate } = req.query;
     const query = { user: req.user.id };
-    if (startDate && endDate) {
-      query.saleDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
-    }
-
-    const sales = await Sale.find(query).sort({ saleDate: -1 });
-    
     const expQuery = { user: req.user.id };
     if (startDate && endDate) {
-      expQuery.expenseDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
+      const sDate = new Date(startDate);
+      const eDate = new Date(endDate);
+      query.saleDate = { $gte: sDate, $lte: eDate };
+      expQuery.expenseDate = { $gte: sDate, $lte: eDate };
     }
-    const expenses = await Expense.find(expQuery).sort({ expenseDate: -1 });
+
+    const [sales, expenses] = await Promise.all([
+      Sale.find(query).sort({ saleDate: -1 }).lean(),
+      Expense.find(expQuery).sort({ expenseDate: -1 }).lean(),
+    ]);
 
     let csv = `SockWise Export\nGenerated,${new Date().toLocaleString()}\n\n`;
     
@@ -412,35 +413,36 @@ export const exportCSV = async (req, res, next) => {
 
 export const exportPDF = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
-    const currencySymbol = user?.currency === 'USD' ? '$' : user?.currency === 'EUR' ? '€' : 'Rs. ';
-
     const { startDate, endDate } = req.query;
     const startD = startDate ? new Date(startDate) : undefined;
     const endD = endDate ? new Date(endDate) : undefined;
 
-    // Aggregations & Data Retrieval
-    const salesAgg = await getSalesAgg(req.user.id, startD, endD);
-    const expensesAgg = await getExpenseAgg(req.user.id, startD, endD);
-
-    const saleQuery = { user: req.user.id };
-    if (startD && endD) saleQuery.saleDate = { $gte: startD, $lte: endD };
-    const salesList = await Sale.find(saleQuery).sort({ saleDate: -1 });
-
+    const query = { user: req.user.id };
     const expQuery = { user: req.user.id };
-    if (startD && endD) expQuery.expenseDate = { $gte: startD, $lte: endD };
-    const expensesList = await Expense.find(expQuery).sort({ expenseDate: -1 });
+    if (startD && endD) {
+      query.saleDate = { $gte: startD, $lte: endD };
+      expQuery.expenseDate = { $gte: startD, $lte: endD };
+    }
 
-    const productsList = await Product.find({ user: req.user.id }).sort({ productName: 1 });
-    const customersList = await Customer.find({ user: req.user.id }).sort({ outstandingBalance: -1 });
-
-    const topProducts = await Sale.aggregate([
-      { $match: { user: new mongoose.Types.ObjectId(req.user.id) } },
-      { $unwind: '$items' },
-      { $group: { _id: '$items.productName', qty: { $sum: '$items.quantity' }, rev: { $sum: '$items.total' } } },
-      { $sort: { qty: -1 } },
-      { $limit: 10 }
+    // Aggregations & Data Retrieval in parallel
+    const [user, salesAgg, expensesAgg, salesList, expensesList, productsList, customersList, topProducts] = await Promise.all([
+      User.findById(req.user.id).lean(),
+      getSalesAgg(req.user.id, startD, endD),
+      getExpenseAgg(req.user.id, startD, endD),
+      Sale.find(query).sort({ saleDate: -1 }).lean(),
+      Expense.find(expQuery).sort({ expenseDate: -1 }).lean(),
+      Product.find({ user: req.user.id }).sort({ productName: 1 }).lean(),
+      Customer.find({ user: req.user.id }).sort({ outstandingBalance: -1 }).lean(),
+      Sale.aggregate([
+        { $match: { user: new mongoose.Types.ObjectId(req.user.id) } },
+        { $unwind: '$items' },
+        { $group: { _id: '$items.productName', qty: { $sum: '$items.quantity' }, rev: { $sum: '$items.total' } } },
+        { $sort: { qty: -1 } },
+        { $limit: 10 }
+      ])
     ]);
+
+    const currencySymbol = user?.currency === 'USD' ? '$' : user?.currency === 'EUR' ? '€' : 'Rs. ';
 
     const totalPendingCredit = customersList.reduce((acc, c) => acc + (c.outstandingBalance || 0), 0);
     const totalStockValuation = productsList.reduce((acc, p) => acc + ((p.stockQuantity || 0) * (p.purchasePrice || 0)), 0);
