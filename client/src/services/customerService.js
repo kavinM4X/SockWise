@@ -1,8 +1,7 @@
 import axiosInstance from '../utils/axiosInstance';
 
 const getCustomers = async (params = {}) => {
-  const query = new URLSearchParams(params).toString();
-  const response = await axiosInstance.get(`/customers?${query}`);
+  const response = await axiosInstance.get('/customers', { params });
   return response.data;
 };
 
