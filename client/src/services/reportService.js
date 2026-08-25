@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import axiosInstance from '../utils/axiosInstance';
 
 const getDashboard = async () => {
@@ -57,27 +58,28 @@ const getStockSummary = async () => {
 
 const exportPDF = async () => {
   try {
-    const response = await axiosInstance.get('/reports/export/pdf', {
-      responseType: 'blob',
-    });
-    const blob = new Blob([response.data], { type: 'application/pdf' });
-    const url = window.URL.createObjectURL(blob);
+    const user = JSON.parse(localStorage.getItem('user'));
+    const token = user?.token || '';
+    if (!token) {
+      toast.error('Session expired. Please log in again.');
+      return;
+    }
+
+    const baseURL = axiosInstance.defaults.baseURL || '/api';
+    const cleanBaseURL = baseURL.replace(/\/+$/, '');
+    const exportUrl = `${cleanBaseURL}/reports/export/pdf?token=${encodeURIComponent(token)}`;
+
+    // Direct HTTP/HTTPS download link (supported across desktop and mobile browsers)
     const link = document.createElement('a');
-    link.href = url;
-    link.download = `SockWise_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+    link.href = exportUrl;
+    link.target = '_blank';
+    link.download = `SockWise_Audit_Report_${new Date().toISOString().split('T')[0]}.pdf`;
     document.body.appendChild(link);
     link.click();
     link.remove();
-    window.URL.revokeObjectURL(url);
   } catch (error) {
     console.error('PDF Export Error:', error);
-    const user = JSON.parse(localStorage.getItem('user'));
-    const token = user?.token || '';
-    if (token) {
-      window.open(`/api/reports/export/pdf?token=${token}`);
-    } else {
-      toast.error('Session expired. Please log in again.');
-    }
+    toast.error('Failed to download PDF report');
   }
 };
 

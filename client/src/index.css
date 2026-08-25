@@ -44,7 +44,7 @@ body{
   width:390px;
   max-width:100vw;
   height:844px;
-  max-height:100vh;
+  max-height:100dvh;
   background:var(--paper);
   border-radius:38px;
   box-shadow:0 30px 60px rgba(20,20,20,0.35), 0 0 0 10px #14161A;
@@ -53,9 +53,9 @@ body{
   display:flex;
   flex-direction:column;
 }
-@media (max-width:430px){
-  body{padding:0;}
-  .phone{border-radius:0;box-shadow:none;width:100vw;height:100vh;}
+@media (max-width:768px){
+  body{padding:0; min-height:100dvh; display:block;}
+  .phone{border-radius:0; box-shadow:none; width:100vw; height:100dvh; max-height:100dvh;}
 }
 
 /* ---- tag signature shape (used for headers / badges) ---- */
@@ -132,7 +132,7 @@ body{
 .auth-error{background:rgba(184,74,56,0.25); border:1px solid rgba(184,74,56,0.5); color:#ffd9d0; font-size:12.5px; padding:9px 12px; border-radius:var(--radius-s); margin-bottom:16px; display:none;}
 
 /* ===== APP SHELL ===== */
-#app-shell{display:flex; flex-direction:column; height:100%;}
+#app-shell{display:flex; flex-direction:column; height:100%; position:relative; overflow:hidden;}
 .app-header{
   padding:18px 20px 14px;
   display:flex; align-items:center; justify-content:space-between;
@@ -155,8 +155,9 @@ body{
   background:var(--card);
   border-top:1px solid var(--line);
   display:flex; justify-content:space-around;
-  padding:9px 4px calc(9px + env(safe-area-inset-bottom,0));
+  padding:9px 4px calc(9px + env(safe-area-inset-bottom,0px));
   flex-shrink:0;
+  z-index:100;
 }
 .nav-item{
   display:flex; flex-direction:column; align-items:center; gap:3px;
