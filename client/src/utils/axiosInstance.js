@@ -2,9 +2,16 @@ import axios from 'axios';
 
 const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_API_URL;
-  if (!envUrl) return '/api';
-  const cleanUrl = envUrl.trim().replace(/\/+$/, '');
-  return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
+  if (envUrl && envUrl.trim()) {
+    const cleanUrl = envUrl.trim().replace(/\/+$/, '');
+    return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
+  }
+  // In development, default to local proxy /api
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+  // In production builds (e.g. Vercel deployment), default to hosted Render backend
+  return 'https://sockwise.onrender.com/api';
 };
 
 const axiosInstance = axios.create({
