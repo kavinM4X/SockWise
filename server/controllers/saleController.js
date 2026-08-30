@@ -28,7 +28,7 @@ const generateInvoiceNumber = async (userId) => {
 // @access  Private
 export const createSale = async (req, res, next) => {
   try {
-    const { customerName, customerPhone, items, discount = 0, paymentMethod, notes, advancePayment = 0 } = req.body;
+    const { customerName, customerPhone, items, discount = 0, fittingCharge = 0, paymentMethod, notes, advancePayment = 0 } = req.body;
 
     if (!items || items.length === 0) {
       res.status(400);
@@ -85,7 +85,9 @@ export const createSale = async (req, res, next) => {
       await product.save();
     }
 
-    const total = subtotal - discount;
+    const parsedFitting = parseFloat(fittingCharge) || 0;
+    const parsedDiscount = parseFloat(discount) || 0;
+    const total = Math.max(subtotal + parsedFitting - parsedDiscount, 0);
     const parsedAdvance = paymentMethod === 'Credit' ? Math.min(Math.max(parseFloat(advancePayment) || 0, 0), total) : 0;
     const creditTabAmount = Math.max(total - parsedAdvance, 0);
 
@@ -104,7 +106,8 @@ export const createSale = async (req, res, next) => {
       customerPhone,
       items: saleItems,
       subtotal,
-      discount,
+      discount: parsedDiscount,
+      fittingCharge: parsedFitting,
       total,
       totalProfit,
       paymentMethod,

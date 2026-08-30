@@ -209,7 +209,8 @@ const Sale = () => {
       customerPhone: sPhone,
       items,
       discount: sDiscount,
-      notes: compiledNotes,
+      fittingCharge: sFitting,
+      notes: sNotes,
       paymentMethod: selectedMethod,
       advancePayment: selectedMethod === 'Credit' ? (parseFloat(advancePayment) || 0) : 0,
     });
@@ -570,18 +571,53 @@ const Sale = () => {
               ))}
             </div>
 
-            <div style={{ fontSize: '13.5px', marginBottom: '20px' }}>
-              {viewReceipt.discount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--danger)', marginBottom: '6px' }}>
-                  <span>Discount</span>
-                  <span>- {fmt(viewReceipt.discount)}</span>
+            {(() => {
+              const rItemsSubtotal = viewReceipt.subtotal || viewReceipt.items?.reduce((a, b) => a + (b.total || 0), 0) || 0;
+              const rFitting = viewReceipt.fittingCharge || (viewReceipt.notes?.match(/Fitting Charge:\s*₹?(\d+(?:\.\d+)?)/i)?.[1] ? parseFloat(viewReceipt.notes.match(/Fitting Charge:\s*₹?(\d+(?:\.\d+)?)/i)[1]) : 0);
+              const rDiscount = viewReceipt.discount || 0;
+              const rAdvance = viewReceipt.advancePayment || 0;
+
+              return (
+                <div style={{ fontSize: '13.5px', marginBottom: '20px', background: 'var(--paper)', padding: '12px', borderRadius: 'var(--radius-s)', border: '1px solid var(--line)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--ink-soft)' }}>
+                    <span>Items Subtotal</span>
+                    <span className="num">{fmt(rItemsSubtotal)}</span>
+                  </div>
+
+                  {rFitting > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--accent)', fontWeight: 600 }}>
+                      <span>Fitting Charge</span>
+                      <span className="num">+ {fmt(rFitting)}</span>
+                    </div>
+                  )}
+
+                  {rDiscount > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--danger)', marginBottom: '6px', fontWeight: 600 }}>
+                      <span>Discount</span>
+                      <span className="num">- {fmt(rDiscount)}</span>
+                    </div>
+                  )}
+
+                  <div style={{ borderTop: '1px dashed var(--line)', paddingTop: '8px', marginTop: '6px', display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '17px', color: 'var(--primary)' }}>
+                    <span>Grand Total</span>
+                    <span className="num">{fmt(viewReceipt.total)}</span>
+                  </div>
+
+                  {viewReceipt.paymentMethod === 'Credit' && (
+                    <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid var(--line)', fontSize: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#3E7D56', marginBottom: '2px' }}>
+                        <span>Down Payment Received:</span>
+                        <span className="num" style={{ fontWeight: 600 }}>{fmt(rAdvance)}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#DB7B2B', fontWeight: 700 }}>
+                        <span>Pending Credit Tab:</span>
+                        <span className="num">{fmt(Math.max(viewReceipt.total - rAdvance, 0))}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '18px', color: 'var(--primary)' }}>
-                <span>Grand Total</span>
-                <span className="num">{fmt(viewReceipt.total)}</span>
-              </div>
-            </div>
+              );
+            })()}
 
             <div style={{ display: 'flex', gap: '10px' }}>
               <button 

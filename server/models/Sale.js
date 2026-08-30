@@ -59,6 +59,10 @@ const saleSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    fittingCharge: {
+      type: Number,
+      default: 0,
+    },
     total: {
       type: Number,
       required: true,
