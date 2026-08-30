@@ -627,11 +627,11 @@ const Sale = () => {
                 style={{ width: '100%', gap: '8px', padding: '12px', background: 'var(--primary)', color: '#fff', fontSize: '13.5px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
                 onClick={async () => {
                   try {
-                    toast.loading('Generating Invoice PDF...', { id: 'pdf-toast' });
+                    toast.loading('Opening Invoice PDF...', { id: 'pdf-toast' });
                     await saleService.exportInvoicePDF(viewReceipt._id, viewReceipt.invoiceNumber);
-                    toast.success('Invoice PDF downloaded!', { id: 'pdf-toast' });
+                    toast.success('Invoice PDF ready!', { id: 'pdf-toast' });
                   } catch (err) {
-                    toast.error('Failed to download invoice PDF', { id: 'pdf-toast' });
+                    toast.error('Failed to open invoice PDF', { id: 'pdf-toast' });
                   }
                 }}
               >
