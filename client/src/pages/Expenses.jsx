@@ -15,7 +15,7 @@ import {
   FiFilter
 } from 'react-icons/fi';
 
-const categories = ['Shop Rent', 'Electricity', 'Salary', 'Transport', 'Maintenance', 'Purchase', 'Marketing', 'Miscellaneous'];
+const categories = ['Shop Rent', 'Electricity', 'Salary', 'Transport', 'Maintenance', 'Purchase', 'Marketing', 'Miscellaneous', 'Other'];
 const paymentMethods = ['Cash', 'UPI', 'Card', 'Bank Transfer'];
 
 const Expenses = () => {
@@ -24,6 +24,7 @@ const Expenses = () => {
   // Form State
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState(categories[0]);
+  const [customCategory, setCustomCategory] = useState('');
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState(paymentMethods[0]);
   const [desc, setDesc] = useState('');
@@ -37,6 +38,9 @@ const Expenses = () => {
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('All');
   const [filterMethod, setFilterMethod] = useState('All');
+
+  // Collect all unique filter categories dynamically
+  const filterCategoryList = Array.from(new Set([...categories.filter(c => c !== 'Other'), ...expenses.map(e => e.category).filter(Boolean)]));
 
   useEffect(() => {
     const handleFabOpen = () => {
@@ -58,6 +62,7 @@ const Expenses = () => {
   const openCreateModal = () => {
     setTitle('');
     setCategory(categories[0]);
+    setCustomCategory('');
     setAmount('');
     setMethod(paymentMethods[0]);
     setDesc('');
@@ -68,7 +73,13 @@ const Expenses = () => {
   const startEdit = (e) => {
     setEditingId(e._id);
     setTitle(e.title);
-    setCategory(e.category);
+    if (categories.includes(e.category) && e.category !== 'Other') {
+      setCategory(e.category);
+      setCustomCategory('');
+    } else {
+      setCategory('Other');
+      setCustomCategory(e.category || '');
+    }
     setAmount(e.amount);
     setMethod(e.paymentMethod);
     setDesc(e.description || '');
@@ -78,6 +89,7 @@ const Expenses = () => {
   const resetForm = () => {
     setTitle('');
     setCategory(categories[0]);
+    setCustomCategory('');
     setAmount('');
     setMethod(paymentMethods[0]);
     setDesc('');
@@ -88,9 +100,15 @@ const Expenses = () => {
   const handleSubmit = async () => {
     const t = title.trim();
     const amt = parseFloat(amount) || 0;
+    const finalCategory = category === 'Other' ? customCategory.trim() : category;
 
     if (!t || amt <= 0) {
       toast.error('Title and a valid amount are required');
+      return;
+    }
+
+    if (category === 'Other' && !finalCategory) {
+      toast.error('Please specify custom category name');
       return;
     }
 
@@ -98,7 +116,7 @@ const Expenses = () => {
     if (editingId) {
       success = await updateExpenseData(editingId, {
         title: t,
-        category,
+        category: finalCategory,
         amount: amt,
         paymentMethod: method,
         description: desc
@@ -106,7 +124,7 @@ const Expenses = () => {
     } else {
       success = await addExpenseData({
         title: t,
-        category,
+        category: finalCategory,
         amount: amt,
         paymentMethod: method,
         description: desc
@@ -228,7 +246,7 @@ const Expenses = () => {
         >
           All Categories
         </button>
-        {categories.map(cat => (
+        {filterCategoryList.map(cat => (
           <button 
             key={cat} 
             className={`stock-filter-chip ${filterCat === cat ? 'active' : ''}`} 
@@ -320,6 +338,19 @@ const Expenses = () => {
                   </select>
                 </div>
               </div>
+
+              {category === 'Other' && (
+                <div className="field">
+                  <label>Specify Custom Category *</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Tea & Snacks, Internet, Packaging..." 
+                    value={customCategory} 
+                    onChange={ev => setCustomCategory(ev.target.value)} 
+                    autoFocus
+                  />
+                </div>
+              )}
 
               <div className="field">
                 <label>Payment Method</label>
