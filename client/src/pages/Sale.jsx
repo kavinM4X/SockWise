@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { fmt } from '../utils/helpers';
 import toast from 'react-hot-toast';
+import saleService from '../services/saleService';
 import {
   FiShoppingCart,
   FiPlus,
@@ -16,7 +17,8 @@ import {
   FiFileText,
   FiClock,
   FiX,
-  FiFilter
+  FiFilter,
+  FiDownload
 } from 'react-icons/fi';
 
 const Sale = () => {
@@ -619,21 +621,39 @@ const Sale = () => {
               );
             })()}
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button 
-                className="btn btn-outline-light" 
-                style={{ flex: 1, color: 'var(--ink)', borderColor: 'var(--line)' }} 
-                onClick={() => setViewReceipt(null)}
+                className="btn btn-primary" 
+                style={{ width: '100%', gap: '8px', padding: '12px', background: 'var(--primary)', color: '#fff', fontSize: '13.5px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+                onClick={async () => {
+                  try {
+                    toast.loading('Generating Invoice PDF...', { id: 'pdf-toast' });
+                    await saleService.exportInvoicePDF(viewReceipt._id, viewReceipt.invoiceNumber);
+                    toast.success('Invoice PDF downloaded!', { id: 'pdf-toast' });
+                  } catch (err) {
+                    toast.error('Failed to download invoice PDF', { id: 'pdf-toast' });
+                  }
+                }}
               >
-                Close
+                <FiDownload size={16} /> Download & Share PDF Invoice
               </button>
-              <button 
-                className="btn" 
-                style={{ flex: 1, background: 'var(--danger-tint)', color: 'var(--danger)', border: 'none', gap: '4px' }} 
-                onClick={() => handleDelete(viewReceipt._id)}
-              >
-                <FiTrash2 size={14} /> Cancel Invoice
-              </button>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  className="btn btn-outline-light" 
+                  style={{ flex: 1, color: 'var(--ink)', borderColor: 'var(--line)' }} 
+                  onClick={() => setViewReceipt(null)}
+                >
+                  Close
+                </button>
+                <button 
+                  className="btn" 
+                  style={{ flex: 1, background: 'var(--danger-tint)', color: 'var(--danger)', border: 'none', gap: '4px' }} 
+                  onClick={() => handleDelete(viewReceipt._id)}
+                >
+                  <FiTrash2 size={14} /> Cancel Invoice
+                </button>
+              </div>
             </div>
           </div>
         </div>

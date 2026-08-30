@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import Sale from '../models/Sale.js';
 import Product from '../models/Product.js';
 import Customer from '../models/Customer.js';
+import User from '../models/User.js';
+import PDFDocument from 'pdfkit';
 
 // Helper to generate Invoice Number: SW-YYYYMMDD-XXXX
 const generateInvoiceNumber = async (userId) => {
@@ -357,6 +359,135 @@ export const getDashboardSummary = async (req, res, next) => {
       averageOrderValue: avgOrderValue,
       pendingCredit,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Export Single Sale Receipt Invoice as PDF
+// @route   GET /api/sales/:id/pdf
+// @access  Private
+export const exportInvoicePDF = async (req, res, next) => {
+  try {
+    const sale = await Sale.findById(req.params.id);
+
+    if (!sale || sale.user.toString() !== req.user.id) {
+      res.status(404);
+      throw new Error('Sale not found');
+    }
+
+    const user = await User.findById(req.user.id).lean();
+    const currencySymbol = user?.currency === 'USD' ? '$' : user?.currency === 'EUR' ? '€' : 'Rs. ';
+
+    const doc = new PDFDocument({ margin: 40, size: 'A4', bufferPages: true });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename=Invoice_${sale.invoiceNumber || sale._id}.pdf`);
+    doc.pipe(res);
+
+    // ===== HEADER BOX =====
+    doc.rect(40, 40, 515, 105).fill('#28594E');
+    doc.fillColor('#FFFFFF').fontSize(20).font('Helvetica-Bold').text(user?.shopName || 'SockWise Store', 55, 52);
+    doc.fontSize(10).font('Helvetica').text(`Tax Invoice / Sale Receipt`, 55, 76);
+    
+    doc.fontSize(8.5).font('Helvetica').text(`Owner: ${user?.ownerName || user?.name || 'N/A'}`, 55, 94);
+    doc.text(`Phone: ${user?.phone || 'N/A'}  |  Email: ${user?.email || 'N/A'}`, 55, 106);
+    doc.text(`GSTIN: ${user?.gstNumber || 'N/A'}  |  Address: ${user?.address || 'N/A'}`, 55, 118);
+
+    doc.moveDown(3);
+    doc.fillColor('#20242A');
+
+    // ===== INVOICE & CUSTOMER INFO METRICS =====
+    const infoY = 160;
+    doc.rect(40, infoY, 515, 55).fill('#F6F3EC');
+    doc.fillColor('#20242A').fontSize(9.5).font('Helvetica-Bold');
+    
+    doc.text(`Invoice No: ${sale.invoiceNumber}`, 55, infoY + 12);
+    doc.text(`Date: ${new Date(sale.saleDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`, 230, infoY + 12);
+    doc.text(`Payment Method: ${sale.paymentMethod}`, 410, infoY + 12);
+
+    doc.fontSize(9).font('Helvetica');
+    doc.text(`Customer Name: ${sale.customerName || 'Walk-in Customer'}`, 55, infoY + 32);
+    doc.text(`Customer Phone: ${sale.customerPhone || 'N/A'}`, 230, infoY + 32);
+    doc.text(`Payment Status: ${sale.paymentStatus}`, 410, infoY + 32);
+
+    doc.y = infoY + 70;
+
+    // ===== ITEMS TABLE HEADER =====
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#28594E').text('ITEMS BREAKDOWN');
+    doc.moveDown(0.4);
+
+    const tableHeaderY = doc.y;
+    doc.fontSize(9).font('Helvetica-Bold').fillColor('#5B6169');
+    doc.text('#', 50, tableHeaderY, { width: 30 });
+    doc.text('Product Name', 90, tableHeaderY, { width: 230 });
+    doc.text('Qty', 320, tableHeaderY, { width: 40, align: 'center' });
+    doc.text('Unit Price', 370, tableHeaderY, { width: 80, align: 'right' });
+    doc.text('Total', 460, tableHeaderY, { width: 80, align: 'right' });
+
+    doc.moveDown(0.3);
+    doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke('#E6E0D2');
+    doc.moveDown(0.3);
+
+    // ITEMS ROWS
+    sale.items.forEach((item, idx) => {
+      const rowY = doc.y;
+      doc.fontSize(8.5).font('Helvetica').fillColor('#20242A');
+      doc.text(`${idx + 1}`, 50, rowY, { width: 30 });
+      doc.text(`${item.productName}`, 90, rowY, { width: 230 });
+      doc.text(`${item.quantity}`, 320, rowY, { width: 40, align: 'center' });
+      doc.text(`${currencySymbol}${(item.sellingPrice || 0).toFixed(2)}`, 370, rowY, { width: 80, align: 'right' });
+      doc.text(`${currencySymbol}${(item.total || 0).toFixed(2)}`, 460, rowY, { width: 80, align: 'right' });
+      doc.moveDown(0.4);
+    });
+
+    doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke('#E6E0D2');
+    doc.moveDown(0.8);
+
+    // ===== FINANCIAL SUMMARY BOX =====
+    const itemsSubtotal = sale.subtotal || sale.items.reduce((a, b) => a + (b.total || 0), 0);
+    const fitting = sale.fittingCharge || (sale.notes?.match(/Fitting Charge:\s*₹?(\d+(?:\.\d+)?)/i)?.[1] ? parseFloat(sale.notes.match(/Fitting Charge:\s*₹?(\d+(?:\.\d+)?)/i)[1]) : 0);
+    const discount = sale.discount || 0;
+    const advance = sale.advancePayment || 0;
+
+    const summaryY = doc.y;
+    doc.rect(300, summaryY, 255, fitting > 0 || discount > 0 || sale.paymentMethod === 'Credit' ? 100 : 65).fill('#F6F3EC');
+    doc.fillColor('#20242A').fontSize(9).font('Helvetica');
+
+    let currentSumY = summaryY + 10;
+    doc.text(`Subtotal:`, 315, currentSumY);
+    doc.text(`${currencySymbol}${itemsSubtotal.toFixed(2)}`, 450, currentSumY, { width: 90, align: 'right' });
+    currentSumY += 14;
+
+    if (fitting > 0) {
+      doc.text(`Fitting Charge:`, 315, currentSumY);
+      doc.text(`+ ${currencySymbol}${fitting.toFixed(2)}`, 450, currentSumY, { width: 90, align: 'right' });
+      currentSumY += 14;
+    }
+
+    if (discount > 0) {
+      doc.fillColor('#D32F2F').text(`Discount:`, 315, currentSumY);
+      doc.text(`- ${currencySymbol}${discount.toFixed(2)}`, 450, currentSumY, { width: 90, align: 'right' });
+      currentSumY += 14;
+    }
+
+    doc.fillColor('#28594E').fontSize(11).font('Helvetica-Bold');
+    doc.text(`Grand Total:`, 315, currentSumY);
+    doc.text(`${currencySymbol}${sale.total.toFixed(2)}`, 450, currentSumY, { width: 90, align: 'right' });
+    currentSumY += 16;
+
+    if (sale.paymentMethod === 'Credit') {
+      doc.fillColor('#20242A').fontSize(8.5).font('Helvetica');
+      doc.text(`Advance Paid: ${currencySymbol}${advance.toFixed(2)}`, 315, currentSumY);
+      doc.text(`Pending Balance: ${currencySymbol}${Math.max(sale.total - advance, 0).toFixed(2)}`, 430, currentSumY, { width: 110, align: 'right' });
+    }
+
+    // ===== FOOTER =====
+    doc.fontSize(8.5).font('Helvetica-Oblique').fillColor('#5B6169');
+    doc.text('Thank you for your business!', 40, 740, { align: 'center' });
+    doc.text('SockWise POS System • Automatically Generated Invoice', 40, 752, { align: 'center' });
+
+    doc.end();
   } catch (error) {
     next(error);
   }

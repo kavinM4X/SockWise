@@ -31,12 +31,27 @@ const getDashboardSummary = async () => {
   return response.data;
 };
 
+// Download / Export Invoice PDF
+const exportInvoicePDF = async (id, invoiceNumber) => {
+  const response = await axiosInstance.get(`/sales/${id}/pdf`, { responseType: 'blob' });
+  const blob = new Blob([response.data], { type: 'application/pdf' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `Invoice_${invoiceNumber || id}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
 const saleService = {
   getSales,
   createSale,
   updateSale,
   deleteSale,
   getDashboardSummary,
+  exportInvoicePDF,
 };
 
 export default saleService;
