@@ -562,6 +562,11 @@ const Sale = () => {
                       {s.invoiceNumber ? ` • ${s.invoiceNumber}` : ''}
                       {s.customerPhone ? ` • ${s.customerPhone}` : ''}
                     </div>
+                    {s.notes && (
+                      <div style={{ fontSize: '11.5px', color: 'var(--ink-soft)', fontStyle: 'italic', marginTop: '3px' }}>
+                        Note: {s.notes}
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
@@ -606,6 +611,12 @@ const Sale = () => {
                   {viewReceipt.paymentMethod || 'Cash'}
                 </span>
               </div>
+              {viewReceipt.notes && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ color: 'var(--ink-soft)' }}>Transaction Notes:</span>
+                  <span style={{ fontWeight: '600', fontStyle: 'italic', textAlign: 'right', maxWidth: '60%' }}>{viewReceipt.notes}</span>
+                </div>
+              )}
             </div>
 
             <div style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)', padding: '12px 0', marginBottom: '16px' }}>

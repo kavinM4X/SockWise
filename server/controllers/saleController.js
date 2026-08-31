@@ -412,7 +412,10 @@ export const exportInvoicePDF = async (req, res, next) => {
 
     // ===== INVOICE & CUSTOMER INFO METRICS =====
     const infoY = 160;
-    doc.rect(40, infoY, 515, 55).fill('#F6F3EC');
+    const hasNotes = !!sale.notes;
+    const infoHeight = hasNotes ? 72 : 55;
+
+    doc.rect(40, infoY, 515, infoHeight).fill('#F6F3EC');
     doc.fillColor('#20242A').fontSize(9.5).font('Helvetica-Bold');
     
     doc.text(`Invoice No: ${sale.invoiceNumber}`, 55, infoY + 12);
@@ -424,7 +427,12 @@ export const exportInvoicePDF = async (req, res, next) => {
     doc.text(`Customer Phone: ${sale.customerPhone || 'N/A'}`, 230, infoY + 32);
     doc.text(`Payment Status: ${sale.paymentStatus}`, 410, infoY + 32);
 
-    doc.y = infoY + 70;
+    if (hasNotes) {
+      doc.fontSize(8.5).font('Helvetica-Oblique').fillColor('#5B6169');
+      doc.text(`Notes: ${sale.notes}`, 55, infoY + 50);
+    }
+
+    doc.y = infoY + infoHeight + 15;
 
     // ===== ITEMS TABLE HEADER =====
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#28594E').text('ITEMS BREAKDOWN');
