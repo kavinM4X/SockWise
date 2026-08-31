@@ -58,12 +58,15 @@ export const AppProvider = ({ children }) => {
 
   const login = async (phone, password) => {
     try {
-      if (phone.length < 10 || password.length < 3) return false;
+      if (!phone || !password) {
+        toast.error('Invalid User ID / Password');
+        return false;
+      }
       const data = await authService.login({ phone, password });
       setCurrentUser(data);
       return true;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      toast.error(error.response?.data?.message || 'Invalid User ID / Password');
       return false;
     }
   };
