@@ -36,7 +36,7 @@ const Login = () => {
 
       {error && (
         <div className="auth-error" style={{ display: 'block' }}>
-          Enter a valid phone number and password.
+          Invalid User ID / Password. Please check your credentials.
         </div>
       )}
 

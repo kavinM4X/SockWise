@@ -71,7 +71,7 @@ export const loginUser = async (req, res, next) => {
       });
     } else {
       res.status(401);
-      throw new Error('Invalid phone number or password');
+      throw new Error('Invalid User ID / Password');
     }
   } catch (error) {
     next(error);
