@@ -30,7 +30,7 @@ const generateInvoiceNumber = async (userId) => {
 // @access  Private
 export const createSale = async (req, res, next) => {
   try {
-    const { customerName, customerPhone, items, discount = 0, fittingCharge = 0, paymentMethod, notes, advancePayment = 0 } = req.body;
+    const { customerName, customerPhone, items, discount = 0, fittingCharge = 0, gstPercent = 0, paymentMethod, notes, advancePayment = 0 } = req.body;
 
     if (!items || items.length === 0) {
       res.status(400);
@@ -89,7 +89,12 @@ export const createSale = async (req, res, next) => {
 
     const parsedFitting = parseFloat(fittingCharge) || 0;
     const parsedDiscount = parseFloat(discount) || 0;
-    const total = Math.max(subtotal + parsedFitting - parsedDiscount, 0);
+    const parsedGstPercent = Math.max(parseFloat(gstPercent) || 0, 0);
+
+    const taxableAmount = Math.max(subtotal + parsedFitting - parsedDiscount, 0);
+    const gstAmount = Math.round(((taxableAmount * parsedGstPercent) / 100) * 100) / 100;
+    const total = Math.round((taxableAmount + gstAmount) * 100) / 100;
+
     const parsedAdvance = paymentMethod === 'Credit' ? Math.min(Math.max(parseFloat(advancePayment) || 0, 0), total) : 0;
     const creditTabAmount = Math.max(total - parsedAdvance, 0);
 
@@ -110,6 +115,8 @@ export const createSale = async (req, res, next) => {
       subtotal,
       discount: parsedDiscount,
       fittingCharge: parsedFitting,
+      gstPercent: parsedGstPercent,
+      gstAmount,
       total,
       totalProfit,
       paymentMethod,
@@ -448,10 +455,18 @@ export const exportInvoicePDF = async (req, res, next) => {
     const itemsSubtotal = sale.subtotal || sale.items.reduce((a, b) => a + (b.total || 0), 0);
     const fitting = sale.fittingCharge || (sale.notes?.match(/Fitting Charge:\s*₹?(\d+(?:\.\d+)?)/i)?.[1] ? parseFloat(sale.notes.match(/Fitting Charge:\s*₹?(\d+(?:\.\d+)?)/i)[1]) : 0);
     const discount = sale.discount || 0;
+    const gstPct = sale.gstPercent || 0;
+    const gstAmt = sale.gstAmount || (gstPct > 0 ? ((itemsSubtotal + fitting - discount) * gstPct) / 100 : 0);
     const advance = sale.advancePayment || 0;
 
+    let summaryHeight = 65;
+    if (fitting > 0) summaryHeight += 14;
+    if (discount > 0) summaryHeight += 14;
+    if (gstPct > 0 || gstAmt > 0) summaryHeight += 14;
+    if (sale.paymentMethod === 'Credit') summaryHeight += 16;
+
     const summaryY = doc.y;
-    doc.rect(300, summaryY, 255, fitting > 0 || discount > 0 || sale.paymentMethod === 'Credit' ? 100 : 65).fill('#F6F3EC');
+    doc.rect(300, summaryY, 255, summaryHeight).fill('#F6F3EC');
     doc.fillColor('#20242A').fontSize(9).font('Helvetica');
 
     let currentSumY = summaryY + 10;
@@ -468,6 +483,13 @@ export const exportInvoicePDF = async (req, res, next) => {
     if (discount > 0) {
       doc.fillColor('#D32F2F').text(`Discount:`, 315, currentSumY);
       doc.text(`- ${currencySymbol}${discount.toFixed(2)}`, 450, currentSumY, { width: 90, align: 'right' });
+      currentSumY += 14;
+      doc.fillColor('#20242A');
+    }
+
+    if (gstPct > 0 || gstAmt > 0) {
+      doc.text(`GST (${gstPct}%):`, 315, currentSumY);
+      doc.text(`+ ${currencySymbol}${gstAmt.toFixed(2)}`, 450, currentSumY, { width: 90, align: 'right' });
       currentSumY += 14;
     }
 

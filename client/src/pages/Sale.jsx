@@ -32,6 +32,7 @@ const Sale = () => {
   const [phone, setPhone] = useState('');
   const [fittingCharge, setFittingCharge] = useState('');
   const [discount, setDiscount] = useState('');
+  const [gstPercent, setGstPercent] = useState('18');
   const [notes, setNotes] = useState('');
   const [selectedMethod, setSelectedMethod] = useState('Cash');
   const [showCreditModal, setShowCreditModal] = useState(false);
@@ -187,13 +188,18 @@ const Sale = () => {
   const subtotal = items.reduce((a, b) => a + b.total, 0);
   const parsedFitting = parseFloat(fittingCharge) || 0;
   const parsedDiscount = parseFloat(discount) || 0;
-  const total = Math.max(subtotal + parsedFitting - parsedDiscount, 0);
+  const parsedGstPercent = Math.max(parseFloat(gstPercent) || 0, 0);
+
+  const taxableAmount = Math.max(subtotal + parsedFitting - parsedDiscount, 0);
+  const gstAmount = Math.round(((taxableAmount * parsedGstPercent) / 100) * 100) / 100;
+  const total = Math.round((taxableAmount + gstAmount) * 100) / 100;
 
   const handleSubmit = async () => {
     const sName = name.trim();
     const sPhone = phone.trim();
     const sDiscount = parsedDiscount;
     const sFitting = parsedFitting;
+    const sGstPercent = parsedGstPercent;
     const sNotes = notes.trim();
 
     if (items.length === 0) {
@@ -201,17 +207,13 @@ const Sale = () => {
       return;
     }
 
-    const compiledNotes = [
-      sFitting > 0 ? `Fitting Charge: ₹${sFitting}` : '',
-      sNotes
-    ].filter(Boolean).join(' | ');
-
     const success = await submitSale({
       customerName: sName,
       customerPhone: sPhone,
       items,
       discount: sDiscount,
       fittingCharge: sFitting,
+      gstPercent: sGstPercent,
       notes: sNotes,
       paymentMethod: selectedMethod,
       advancePayment: selectedMethod === 'Credit' ? (parseFloat(advancePayment) || 0) : 0,
@@ -222,6 +224,7 @@ const Sale = () => {
       setPhone('');
       setFittingCharge('');
       setDiscount('');
+      setGstPercent('18');
       setNotes('');
       setSelectedMethod('Cash');
       setAdvancePayment('0');
@@ -346,7 +349,7 @@ const Sale = () => {
                 </div>
 
                 {parsedFitting > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '13px', color: 'var(--primary)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '13px', color: 'var(--accent)' }}>
                     <span>Fitting Charge</span>
                     <span className="num" style={{ fontWeight: 600 }}>+ {fmt(parsedFitting)}</span>
                   </div>
@@ -356,6 +359,13 @@ const Sale = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '13px', color: 'var(--danger)' }}>
                     <span>Discount</span>
                     <span className="num" style={{ fontWeight: 600 }}>- {fmt(parsedDiscount)}</span>
+                  </div>
+                )}
+
+                {parsedGstPercent > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '13px', color: 'var(--primary)', fontWeight: 600 }}>
+                    <span>GST ({parsedGstPercent}%)</span>
+                    <span className="num">+ {fmt(gstAmount)}</span>
                   </div>
                 )}
 
@@ -389,6 +399,43 @@ const Sale = () => {
                 value={discount} 
                 onChange={e => setDiscount(e.target.value)} 
               />
+            </div>
+          </div>
+
+          {/* GST % Field with Preset Quick Chips & Manual Entry */}
+          <div className="field" style={{ marginTop: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ margin: 0 }}>GST Tax Percentage (%)</label>
+              {parsedGstPercent > 0 && (
+                <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 700 }}>
+                  GST Tax: +{fmt(gstAmount)}
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input 
+                type="number" 
+                placeholder="18" 
+                value={gstPercent} 
+                onChange={e => setGstPercent(e.target.value)} 
+                style={{ flex: 1, fontWeight: 600, color: 'var(--primary)', fontSize: '15px' }}
+              />
+
+              {/* Quick Preset Buttons */}
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {['0', '5', '12', '18', '28'].map(rate => (
+                  <button 
+                    key={rate} 
+                    type="button"
+                    className={`stock-filter-chip ${gstPercent === rate ? 'active' : ''}`} 
+                    style={{ padding: '6px 10px', fontSize: '12px' }}
+                    onClick={() => setGstPercent(rate)}
+                  >
+                    {rate}%
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -577,6 +624,8 @@ const Sale = () => {
               const rItemsSubtotal = viewReceipt.subtotal || viewReceipt.items?.reduce((a, b) => a + (b.total || 0), 0) || 0;
               const rFitting = viewReceipt.fittingCharge || (viewReceipt.notes?.match(/Fitting Charge:\s*₹?(\d+(?:\.\d+)?)/i)?.[1] ? parseFloat(viewReceipt.notes.match(/Fitting Charge:\s*₹?(\d+(?:\.\d+)?)/i)[1]) : 0);
               const rDiscount = viewReceipt.discount || 0;
+              const rGstPercent = viewReceipt.gstPercent || 0;
+              const rGstAmount = viewReceipt.gstAmount || (rGstPercent > 0 ? Math.round((((rItemsSubtotal + rFitting - rDiscount) * rGstPercent) / 100) * 100) / 100 : 0);
               const rAdvance = viewReceipt.advancePayment || 0;
 
               return (
@@ -597,6 +646,13 @@ const Sale = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--danger)', marginBottom: '6px', fontWeight: 600 }}>
                       <span>Discount</span>
                       <span className="num">- {fmt(rDiscount)}</span>
+                    </div>
+                  )}
+
+                  {(rGstPercent > 0 || rGstAmount > 0) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--primary)', marginBottom: '6px', fontWeight: 600 }}>
+                      <span>GST ({rGstPercent}%)</span>
+                      <span className="num">+ {fmt(rGstAmount)}</span>
                     </div>
                   )}
 
