@@ -424,7 +424,7 @@ const Sale = () => {
 
               {/* Quick Preset Buttons */}
               <div style={{ display: 'flex', gap: '4px' }}>
-                {['0', '5', '12', '18', '28'].map(rate => (
+                {['0', '6', '12', '18', '28'].map(rate => (
                   <button 
                     key={rate} 
                     type="button"
