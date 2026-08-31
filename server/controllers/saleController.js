@@ -30,12 +30,7 @@ const generateInvoiceNumber = async (userId) => {
 // @access  Private
 export const createSale = async (req, res, next) => {
   try {
-    const { customerName, customerPhone, items, discount = 0, fittingCharge = 0, gstPercent = 0, paymentMethod, notes, advancePayment = 0 } = req.body;
-
-    if (!items || items.length === 0) {
-      res.status(400);
-      throw new Error('No sale items provided');
-    }
+    const { customerName, customerPhone, items = [], discount = 0, fittingCharge = 0, gstPercent = 0, paymentMethod, notes, advancePayment = 0 } = req.body;
 
     if (!paymentMethod) {
       res.status(400);
@@ -47,49 +42,60 @@ export const createSale = async (req, res, next) => {
       throw new Error('Customer details are required for Credit sales');
     }
 
+    const parsedFitting = parseFloat(fittingCharge) || 0;
+    const parsedDiscount = parseFloat(discount) || 0;
+    const parsedGstPercent = Math.max(parseFloat(gstPercent) || 0, 0);
+
+    const safeItems = Array.isArray(items) ? items : [];
+
+    if (safeItems.length === 0 && parsedFitting <= 0) {
+      res.status(400);
+      throw new Error('Please add at least one product to cart or enter a fitting charge amount');
+    }
+
     let subtotal = 0;
     let totalProfit = 0;
     const saleItems = [];
 
-    // Verify stock and build items
-    for (const item of items) {
-      const product = await Product.findOne({ _id: item.productId, user: req.user.id });
-      
-      if (!product) {
-        res.status(404);
-        throw new Error(`Product not found: ${item.productName}`);
+    // Verify stock and build items if items are provided
+    if (safeItems.length > 0) {
+      for (const item of safeItems) {
+        const product = await Product.findOne({ _id: item.productId, user: req.user.id });
+        
+        if (!product) {
+          res.status(404);
+          throw new Error(`Product not found: ${item.productName}`);
+        }
+
+        if (product.stockQuantity < item.quantity) {
+          res.status(400);
+          throw new Error(`Insufficient stock for ${product.productName}. Available: ${product.stockQuantity}`);
+        }
+
+        // Calculate totals
+        const itemTotal = product.sellingPrice * item.quantity;
+        const itemProfit = (product.sellingPrice - product.purchasePrice) * item.quantity;
+        
+        subtotal += itemTotal;
+        totalProfit += itemProfit;
+
+        saleItems.push({
+          product: product._id,
+          productId: product.productId,
+          productName: product.productName,
+          quantity: item.quantity,
+          purchasePrice: product.purchasePrice,
+          sellingPrice: product.sellingPrice,
+          total: itemTotal,
+        });
+
+        // Decrease stock
+        product.stockQuantity -= item.quantity;
+        await product.save();
       }
-
-      if (product.stockQuantity < item.quantity) {
-        res.status(400);
-        throw new Error(`Insufficient stock for ${product.productName}. Available: ${product.stockQuantity}`);
-      }
-
-      // Calculate totals
-      const itemTotal = product.sellingPrice * item.quantity;
-      const itemProfit = (product.sellingPrice - product.purchasePrice) * item.quantity;
-      
-      subtotal += itemTotal;
-      totalProfit += itemProfit;
-
-      saleItems.push({
-        product: product._id,
-        productId: product.productId,
-        productName: product.productName,
-        quantity: item.quantity,
-        purchasePrice: product.purchasePrice,
-        sellingPrice: product.sellingPrice,
-        total: itemTotal,
-      });
-
-      // Decrease stock
-      product.stockQuantity -= item.quantity;
-      await product.save();
+    } else {
+      totalProfit = Math.max(parsedFitting - parsedDiscount, 0);
     }
-
-    const parsedFitting = parseFloat(fittingCharge) || 0;
-    const parsedDiscount = parseFloat(discount) || 0;
-    const parsedGstPercent = Math.max(parseFloat(gstPercent) || 0, 0);
 
     const taxableAmount = Math.max(subtotal + parsedFitting - parsedDiscount, 0);
     const gstAmount = Math.round(((taxableAmount * parsedGstPercent) / 100) * 100) / 100;

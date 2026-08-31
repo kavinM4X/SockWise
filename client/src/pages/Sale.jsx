@@ -202,8 +202,8 @@ const Sale = () => {
     const sGstPercent = parsedGstPercent;
     const sNotes = notes.trim();
 
-    if (items.length === 0) {
-      toast.error('Add at least one product item to complete sale');
+    if (items.length === 0 && sFitting <= 0) {
+      toast.error('Add at least one product to cart or enter a fitting charge');
       return;
     }
 
@@ -377,7 +377,7 @@ const Sale = () => {
             </div>
           ) : (
             <div className="empty-note" style={{ marginTop: '14px', marginBottom: '20px' }}>
-              Your cart is empty. Select a product above to add items.
+              Cart is empty (Optional). You can add products above or enter Fitting / Service Charges below.
             </div>
           )}
 
@@ -612,12 +612,18 @@ const Sale = () => {
               <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink-soft)', marginBottom: '8px' }}>
                 Item Breakdown
               </div>
-              {viewReceipt.items && viewReceipt.items.map((item, idx) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
-                  <span>{item.productName} × {item.quantity}</span>
-                  <span className="num" style={{ fontWeight: 600 }}>{fmt(item.total)}</span>
+              {viewReceipt.items && viewReceipt.items.length > 0 ? (
+                viewReceipt.items.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
+                    <span>{item.productName} × {item.quantity}</span>
+                    <span className="num" style={{ fontWeight: 600 }}>{fmt(item.total)}</span>
+                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: '12.5px', color: 'var(--ink-soft)', fontStyle: 'italic', padding: '4px 0' }}>
+                  Custom Service / Fitting Charge Only (No stock items)
                 </div>
-              ))}
+              )}
             </div>
 
             {(() => {
