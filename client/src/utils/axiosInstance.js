@@ -9,13 +9,26 @@ const normalizeUrl = (url) => {
 
 // List of configured backends (Primary and Backup URLs)
 const getBackendUrls = () => {
-  const urls = [
-    import.meta.env.VITE_API_URL,
-    import.meta.env.VITE_BACKUP_API_URL,
+  const envPrimary = import.meta.env.VITE_API_URL;
+  const envBackup = import.meta.env.VITE_BACKUP_API_URL;
+  
+  const rawUrls = [
+    envPrimary,
+    envBackup,
     'https://sockwise-nlcf.onrender.com/api',
     'https://sockwise.onrender.com/api',
   ].filter(Boolean);
-  return [...new Set(urls.map(normalizeUrl))];
+  
+  const uniqueUrls = [...new Set(rawUrls.map(normalizeUrl))];
+
+  // Sort: Move known suspended domain to the end so active backend is tried first
+  return uniqueUrls.sort((a, b) => {
+    const isASuspended = a.includes('sockwise.onrender.com') && !a.includes('sockwise-nlcf');
+    const isBSuspended = b.includes('sockwise.onrender.com') && !b.includes('sockwise-nlcf');
+    if (isASuspended && !isBSuspended) return 1;
+    if (!isASuspended && isBSuspended) return -1;
+    return 0;
+  });
 };
 
 const backendUrls = getBackendUrls();
