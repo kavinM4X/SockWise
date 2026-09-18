@@ -12,6 +12,7 @@ const getBackendUrls = () => {
   const urls = [
     import.meta.env.VITE_API_URL,
     import.meta.env.VITE_BACKUP_API_URL,
+    'https://sockwise-nlcf.onrender.com/api',
     'https://sockwise.onrender.com/api',
   ].filter(Boolean);
   return [...new Set(urls.map(normalizeUrl))];
