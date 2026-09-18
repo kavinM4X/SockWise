@@ -81,7 +81,6 @@ const corsOptions = {
 
 // Enable CORS and handle preflight OPTIONS requests
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 // Security Middleware (configured to permit cross-origin access)
 app.use(helmet({
@@ -139,7 +138,7 @@ app.use("/api/backup", backupRoutes);
 const clientDistPath = path.join(__dirname, "../client/dist");
 if (fs.existsSync(clientDistPath)) {
   app.use(express.static(clientDistPath));
-  app.get("*", (req, res, next) => {
+  app.use((req, res, next) => {
     if (req.path.startsWith("/api")) {
       return next();
     }
