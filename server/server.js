@@ -44,14 +44,49 @@ const app = express();
 // Enable Response Compression (Gzip / Brotli)
 app.use(compression());
 
-// Security Middleware
-app.use(helmet());
+// Dynamic Allowed Origins Setup
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.CLIENT_URL,
+  'https://sock-wise.vercel.app',
+  'https://sockwise.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5000'
+].filter(Boolean);
 
-// Production & Development CORS Configuration
-app.use(cors({
-  origin: true,
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. mobile apps, curl, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      /\.vercel\.app$/.test(origin) ||
+      /^http:\/\/localhost:\d+$/.test(origin);
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      // Dynamic origin approval fallback so frontends on custom domains/previews are not blocked
+      callback(null, true);
+    }
+  },
   credentials: true,
-  maxAge: 86400, // Cache CORS preflight OPTIONS check for 24 hours
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  optionsSuccessStatus: 200,
+  maxAge: 86400 // Cache CORS preflight OPTIONS check for 24 hours
+};
+
+// Enable CORS and handle preflight OPTIONS requests
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+// Security Middleware (configured to permit cross-origin access)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "unsafe-none" }
 }));
 
 // Request Logging
@@ -60,19 +95,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// Global Rate Limiter
+// Global Rate Limiter (skips preflight OPTIONS requests)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // limit each IP to 1000 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  message: { message: 'Too many requests from this IP, please try again later.' },
+  skip: (req) => req.method === 'OPTIONS'
 });
 app.use('/api', globalLimiter);
 
-// Auth Route-Specific Rate Limiter
+// Auth Route-Specific Rate Limiter (skips preflight OPTIONS requests)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 50, // limit each IP to 50 login/register requests per windowMs
-  message: 'Too many authentication attempts, please try again later.'
+  message: { message: 'Too many authentication attempts, please try again later.' },
+  skip: (req) => req.method === 'OPTIONS'
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
