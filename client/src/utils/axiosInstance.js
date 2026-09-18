@@ -1,49 +1,116 @@
 import axios from 'axios';
 
-const getBaseURL = () => {
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl && envUrl.trim()) {
-    const cleanUrl = envUrl.trim().replace(/\/+$/, '');
-    return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
-  }
-  // In development, default to local proxy /api
+// Normalize URL to always end with /api
+const normalizeUrl = (url) => {
+  if (!url) return '';
+  const clean = url.trim().replace(/\/+$/, '');
+  return clean.endsWith('/api') ? clean : `${clean}/api`;
+};
+
+// List of configured backends (Primary and Backup URLs)
+const getBackendUrls = () => {
+  const urls = [
+    import.meta.env.VITE_API_URL,
+    import.meta.env.VITE_BACKUP_API_URL,
+    'https://sockwise.onrender.com/api',
+  ].filter(Boolean);
+  return [...new Set(urls.map(normalizeUrl))];
+};
+
+const backendUrls = getBackendUrls();
+
+// Retrieve previously working backend index from sessionStorage or default to 0
+let currentUrlIndex = parseInt(sessionStorage.getItem('activeBackendIndex') || '0', 10);
+if (isNaN(currentUrlIndex) || currentUrlIndex >= backendUrls.length) {
+  currentUrlIndex = 0;
+}
+
+const getActiveBaseURL = () => {
   if (import.meta.env.DEV) {
     return '/api';
   }
-  // In production builds (e.g. Vercel deployment), default to hosted Render backend
-  return 'https://sockwise.onrender.com/api';
+  return backendUrls[currentUrlIndex] || backendUrls[0] || '/api';
 };
 
 const axiosInstance = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: getActiveBaseURL(),
+  timeout: 15000, // 15-second timeout to quickly catch unresponsive/suspended backends
 });
 
-// Request interceptor to add the auth token header to every request
+// Switch active backend URL to the next available backend
+const switchToNextBackend = () => {
+  if (backendUrls.length <= 1) return axiosInstance.defaults.baseURL;
+  currentUrlIndex = (currentUrlIndex + 1) % backendUrls.length;
+  sessionStorage.setItem('activeBackendIndex', currentUrlIndex.toString());
+  const newBaseURL = backendUrls[currentUrlIndex];
+  axiosInstance.defaults.baseURL = newBaseURL;
+  console.warn(`[SockWise Auto-Failover] Switched active backend to: ${newBaseURL}`);
+  return newBaseURL;
+};
+
+// Check if error response indicates the server is suspended or down
+const isServerDownOrSuspended = (error) => {
+  if (!error.response) {
+    // Network Error or Timeout
+    return true;
+  }
+  const status = error.response.status;
+  // Service Unavailable (503), Bad Gateway (502), Gateway Timeout (504)
+  if ([502, 503, 504].includes(status)) {
+    return true;
+  }
+  // Render suspended message response
+  if (typeof error.response.data === 'string' && error.response.data.toLowerCase().includes('suspended')) {
+    return true;
+  }
+  return false;
+};
+
+// Request interceptor to attach Authorization token
 axiosInstance.interceptors.request.use(
   (config) => {
-    const user = JSON.parse(localStorage.getItem('user'));
+    // Update baseURL dynamically in case it changed
+    if (!import.meta.env.DEV && backendUrls.length > 0) {
+      config.baseURL = backendUrls[currentUrlIndex] || config.baseURL;
+    }
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
     if (user && user.token) {
       config.headers['Authorization'] = `Bearer ${user.token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor to catch 401 Unauthorized errors and force logout
+// Response interceptor with 401 handling & automatic backend failover
 axiosInstance.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Handle 401 Unauthorized
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('user');
       window.location.href = '/login';
+      return Promise.reject(error);
     }
+
+    // Automatic Failover: if current backend is down/suspended, retry on backup backend
+    if (isServerDownOrSuspended(error) && originalRequest && !originalRequest._retryFailover) {
+      originalRequest._retryFailover = true;
+      const nextBaseURL = switchToNextBackend();
+      
+      // If we have another backend to try, retry request with new base URL
+      if (backendUrls.length > 1) {
+        console.log(`[SockWise Auto-Failover] Retrying request on fallback backend: ${nextBaseURL}`);
+        originalRequest.baseURL = nextBaseURL;
+        return axiosInstance(originalRequest);
+      }
+    }
+
     return Promise.reject(error);
   }
 );
 
 export default axiosInstance;
+
