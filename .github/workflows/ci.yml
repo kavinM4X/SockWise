@@ -1,4 +1,4 @@
-name: SockWise CI
+name: SockWise CI/CD
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   packages: write
 
 jobs:
-  ci:
+  ci-and-publish:
     name: Build, Validate & Publish
     runs-on: ubuntu-latest
 
@@ -131,3 +131,92 @@ jobs:
           push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
+
+  deploy-cd:
+    name: Continuous Deployment (Self-Hosted)
+    needs: ci-and-publish
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: [self-hosted, Windows, X64]
+    env:
+      IMAGE_TAG: sha-${{ github.sha }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Deployment Compose Configuration
+        run: docker compose -f docker-compose.ghcr.yml config
+
+      - name: Pull GHCR Container Images
+        run: docker compose -f docker-compose.ghcr.yml pull
+
+      - name: Deploy Containers from GHCR
+        run: docker compose -f docker-compose.ghcr.yml up -d --no-build
+
+      - name: Verify Running Containers
+        run: docker compose -f docker-compose.ghcr.yml ps
+
+      - name: Verify Application Health Check
+        shell: powershell
+        run: |
+          $maxAttempts = 10
+          $attempt = 0
+          $healthy = $false
+          while ($attempt -lt $maxAttempts) {
+            $attempt++
+            Write-Host "Checking /api/health (Attempt $attempt of $maxAttempts)..."
+            try {
+              $response = Invoke-WebRequest -Uri "http://localhost:8080/api/health" -UseBasicParsing -TimeoutSec 5
+              if ($response.StatusCode -eq 200) {
+                Write-Host "Backend health check PASSED with HTTP 200."
+                $healthy = $true
+                break
+              }
+            } catch {
+              Write-Host "Health check attempt $attempt failed: $_"
+            }
+            Start-Sleep -Seconds 5
+          }
+          if (-not $healthy) {
+            Write-Error "Deployment health check failed after $maxAttempts attempts."
+            exit 1
+          }
+
+      - name: Verify Frontend Web Application
+        shell: powershell
+        run: |
+          try {
+            $response = Invoke-WebRequest -Uri "http://localhost:8080/" -UseBasicParsing -TimeoutSec 5
+            if ($response.StatusCode -eq 200) {
+              Write-Host "Frontend web check PASSED with HTTP 200."
+            } else {
+              Write-Error "Frontend web check failed with status $($response.StatusCode)"
+              exit 1
+            }
+          } catch {
+            Write-Error "Frontend web check failed: $_"
+            exit 1
+          }
+
+      - name: Verify Observability Stack
+        shell: powershell
+        run: |
+          $required = @("sockwise-prometheus", "sockwise-grafana", "sockwise-loki", "sockwise-alloy", "sockwise-tempo", "sockwise-cadvisor")
+          $running = docker ps --format "{{.Names}}"
+          foreach ($svc in $required) {
+            if ($running -notcontains $svc) {
+              Write-Error "Observability service $svc is not running!"
+              exit 1
+            }
+          }
+          Write-Host "All 6 observability services verified active and running."
+
+      - name: Deployment Summary
+        shell: powershell
+        run: |
+          Write-Host "=========================================="
+          Write-Host "Deployment commit: ${{ github.sha }}"
+          Write-Host "Backend image: ghcr.io/${{ github.repository_owner }}/sockwise-backend:sha-${{ github.sha }}"
+          Write-Host "Frontend image: ghcr.io/${{ github.repository_owner }}/sockwise-frontend:sha-${{ github.sha }}"
+          Write-Host "Deployment status: SUCCESS"
+          Write-Host "=========================================="
