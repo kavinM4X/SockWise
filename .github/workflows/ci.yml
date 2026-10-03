@@ -144,6 +144,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Prepare Server Environment Configuration
+        shell: powershell
+        run: |
+          if (Test-Path "C:\Users\kavin\Desktop\projects\SockWise\server\.env") {
+            Copy-Item "C:\Users\kavin\Desktop\projects\SockWise\server\.env" -Destination "server\.env" -Force
+            Write-Host "Configured server/.env from host workspace."
+          }
+
       - name: Validate Deployment Compose Configuration
         run: docker compose -f docker-compose.ghcr.yml config
 
