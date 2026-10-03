@@ -1,3 +1,5 @@
+import "./config/tracing.js";
+import { trace } from "@opentelemetry/api";
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -19,6 +21,7 @@ import compression from "compression";
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { metricsMiddleware, register } from "./config/metrics.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -88,11 +91,17 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: "unsafe-none" }
 }));
 
-// Request Logging
+// Request Logging with OpenTelemetry Trace Correlation
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  const span = trace.getActiveSpan();
+  const traceId = span ? span.spanContext().traceId : null;
+  const traceStr = traceId ? ` [trace_id=${traceId}]` : "";
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}${traceStr}`);
   next();
 });
+
+// Prometheus HTTP Metrics Middleware
+app.use(metricsMiddleware);
 
 // Global Rate Limiter (skips preflight OPTIONS requests)
 const globalLimiter = rateLimit({
@@ -118,6 +127,16 @@ app.use(express.urlencoded({ extended: true }));
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// Prometheus Metrics Endpoint
+app.get("/metrics", async (req, res) => {
+  try {
+    res.set("Content-Type", register.contentType);
+    res.end(await register.metrics());
+  } catch (err) {
+    res.status(500).end(err.message || 'Internal Server Error');
+  }
+});
 
 app.get("/favicon.ico", (req, res) => res.status(204).end());
 

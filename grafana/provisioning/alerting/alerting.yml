@@ -1,0 +1,176 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: 'Backend Health'
+    folder: 'SockWise Alerts'
+    interval: 10s
+    rules:
+      - uid: sockwise-backend-down
+        title: 'SockWise Backend Down'
+        condition: B
+        for: 30s
+        labels:
+          application: sockwise
+          environment: local
+          severity: critical
+        annotations:
+          summary: 'SockWise backend is down'
+          description: 'The SockWise backend Prometheus target has been unavailable for the configured duration.'
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              editorMode: code
+              expr: 'up{job="sockwise-backend"}'
+              instant: true
+              range: false
+              refId: A
+          - refId: B
+            queryType: ''
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                name: Expression
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+
+  - orgId: 1
+    name: 'API Reliability'
+    folder: 'SockWise Alerts'
+    interval: 10s
+    rules:
+      - uid: sockwise-high-5xx
+        title: 'SockWise High HTTP 5xx Error Rate'
+        condition: B
+        for: 30s
+        labels:
+          application: sockwise
+          environment: local
+          severity: warning
+        annotations:
+          summary: 'SockWise API 5xx error rate is high'
+          description: 'The percentage of HTTP 5xx responses has exceeded the configured threshold.'
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              editorMode: code
+              expr: '((sum(rate(sockwise_http_requests_total{status_code=~"5.."}[1m])) or vector(0)) / (sum(rate(sockwise_http_requests_total[1m])) > 0 or vector(1))) * 100'
+              instant: true
+              range: false
+              refId: A
+          - refId: B
+            queryType: ''
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 5
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                name: Expression
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+
+  - orgId: 1
+    name: 'API Performance'
+    folder: 'SockWise Alerts'
+    interval: 10s
+    rules:
+      - uid: sockwise-high-latency
+        title: 'SockWise High API Latency'
+        condition: B
+        for: 30s
+        labels:
+          application: sockwise
+          environment: local
+          severity: warning
+        annotations:
+          summary: 'SockWise API latency is high'
+          description: 'The 95th percentile API response latency has exceeded the configured threshold.'
+        data:
+          - refId: A
+            queryType: ''
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              editorMode: code
+              expr: 'histogram_quantile(0.95, sum(rate(sockwise_http_request_duration_seconds_bucket[1m])) by (le)) or vector(0)'
+              instant: true
+              range: false
+              refId: A
+          - refId: B
+            queryType: ''
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                name: Expression
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold

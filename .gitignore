@@ -11,7 +11,13 @@ build/
 
 # Environment files
 .env
+.env.*
+.env.local
+*.env
 server/.env
+client/.env
+!.env.example
+!server/.env.example
 
 # IDE / OS files
 .DS_Store
